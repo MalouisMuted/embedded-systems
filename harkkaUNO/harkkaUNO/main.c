@@ -1,18 +1,30 @@
-/*
- * harkkaUNO.c
- *
- * Created: 23.4.2020 14.58.40
- * Author : elias
- */ 
+/*Aleksi, Elias, Aku*/
 
 #include <avr/io.h>
+//#include <avr/interrupt.h>
+#define F_CPU 16000000UL
 
+void SPI_SlaveInit(void)
+{
+    /* Set MISO output, all others input */
+    DDR_SPI = (1 << DD_MISO);
+    /* Enable SPI */
+    SPCR = (1 << SPE);
+}
+char SPI_SlaveReceive(void)
+{
+    /* Wait for reception complete */
+    while (!(SPSR & (1 << SPIF)))
+        ;
+    /* Return Data Register */
+    return SPDR;
+}
 
 int main(void)
 {
-    /* Replace with your application code */
-    while (1) 
+    // enable global interrupts
+    // sei();
+    while (1)
     {
     }
 }
-
