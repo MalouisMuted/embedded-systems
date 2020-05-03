@@ -5,14 +5,18 @@
  * Author : Elias, Aleksi, Aku
  */ 
 
-#include <avr/io.h>
-#include "lcd.h" // LCD Library by Peter Fleury.
-
 #define CHECK_SENSOR 0
 #define ALARM 1
 #define KEYPAD 2
 
 #define F_CPU 16000000UL
+
+
+#include <avr/io.h>
+#include "lcd.h" // LCD Library by Peter Fleury.
+#include "keypad.h"
+
+
 
 const char message1_connection_established[] = "Alarm connected successfully";
 const char message2_movement_detected[] = "Movement detected";
@@ -27,8 +31,9 @@ void display_message(int message_number, int password_length);
 
 int main(void)
 {
-	// LCD initialization.
+	// LCD and keypad initialization.
 	lcd_init(LCD_DISP_ON);
+	KEYPAD_Init();
     /* Replace with your application code */
     while (1) 
     {
