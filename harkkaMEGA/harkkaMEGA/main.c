@@ -78,7 +78,7 @@ const char message5_password_time_out[] = "Password time-out error.";
 
 int8_t g_state = 0;
 
-/* Fucntion declarations */
+/* Function declarations */
 void display_message(int message_number, int password_length); 
 void SPI_init();
 char *SPI_communicate();
@@ -96,7 +96,6 @@ int main(void)
 	stdin = &uart_input;
 	//----------------
 	
-    /* Replace with your application code */
     while (1) 
     {
 		switch (g_state) 
@@ -113,6 +112,11 @@ int main(void)
 				break;
 			case KEYPAD:
 				/*Todo*/
+				/*
+				// this works to get the key press recorded 
+				char input_key[2];
+				input_key[0] = KEYPAD_GetKey();
+				*/
 				break;
 		}
 		
@@ -209,4 +213,3 @@ char *SPI_communicate()
 	
 	return spi_receive_data;
 }
-	
