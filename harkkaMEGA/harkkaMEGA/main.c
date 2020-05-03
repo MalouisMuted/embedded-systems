@@ -10,6 +10,7 @@
 #define KEYPAD 2
 
 #define F_CPU 16000000UL
+#define MaxEepromSize 4096
 
 //UART for debugging
 #define FOSC 16000000UL // Clock Speed
@@ -21,6 +22,7 @@
 #include <stdlib.h>
 #include "lcd.h" // LCD Library by Peter Fleury.
 #include "keypad.h" // Keypad Library by https://www.exploreembedded.com/wiki/AVR_C_Library
+#include "eeprom.h" // Keypad Library by https://www.exploreembedded.com/wiki/AVR_C_Library
 
 //UART for debugging 
 #include <avr/interrupt.h>
@@ -82,6 +84,8 @@ int8_t g_state = 0;
 void display_message(int message_number, int password_length); 
 void SPI_init();
 char *SPI_communicate();
+void EEPROM_WriteString(unsigned int eeprom_address, unsigned char * source_address);
+void EEPROM_ReadString(unsigned int eeprom_address, unsigned char * destination_address);
 
 int main(void)
 {
@@ -212,4 +216,28 @@ char *SPI_communicate()
 	printf(spi_receive_data);
 	
 	return spi_receive_data;
+}
+
+void EEPROM_WriteString(unsigned int eeprom_address, unsigned char * source_address)
+{
+	
+	do
+	{
+		EEPROM_WriteByte(eeprom_address,*source_address); //Write a byte from RAM to EEPROM
+		source_address++;					    //Increment the RAM Address
+		eeprom_address++;					   //Increment the Eeprom Address
+	} while(*(source_address-1) !=0);
+}
+
+void EEPROM_ReadString(unsigned int eeprom_address, unsigned char * destination_address)
+{
+	char eeprom_data;
+	
+	do
+	{
+		eeprom_data = EEPROM_ReadByte(eeprom_address); //Read a byte from EEPROM to RAM
+		*destination_address = eeprom_data;	       //Copy the data into String Buffer
+		destination_address++;			      //Increment the RAM Address
+		eeprom_address++;			     //Increment the Eeprom Address
+	}while(eeprom_data!=0);
 }
