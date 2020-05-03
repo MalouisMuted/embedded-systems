@@ -72,11 +72,13 @@ FILE uart_output = FDEV_SETUP_STREAM(USART_Transmit, NULL, _FDEV_SETUP_WRITE);
 FILE uart_input = FDEV_SETUP_STREAM(NULL, USART_Receive, _FDEV_SETUP_READ);
 // ----------------------------------
 
-const char message1_connection_established[] = "Alarm connected successfully";
-const char message2_movement_detected[] = "Movement detected";
-const char message3_give_password[] = "Type password to reset";
-const char message4_password_correct[] = "Password given, alarm will reset";
-const char message5_password_time_out[] = "Password time-out error.";
+const char message1_connection_established[] = "SPI OK";
+const char message2_movement_detected[] = "Movement found";
+const char message3_give_password[] = "Type password";
+const char message4_1_password_correct[] = "Password given,";
+const char message4_2_password_correct[] = "alarm reset";
+const char message5_1_password_time_out[] = "Password time-";
+const char message5_2_password_time_out[] = "out error";
 
 int8_t g_state = 0;
 
@@ -167,13 +169,19 @@ void display_message(int message_number, int password_length)
 			}
 			break;
 		case 4:
-			lcd_puts(message4_password_correct);
+			lcd_puts(message4_1_password_correct);
+			lcd_gotoxy(0,1);
+			lcd_puts(message4_2_password_correct);
 			break;
 		case 5:
-			lcd_puts(message5_password_time_out);
+			lcd_puts(message5_1_password_time_out);
+			lcd_gotoxy(0,1);
+			lcd_puts(message5_2_password_time_out);
 			break;
 		default:
-			lcd_puts("Unknown value passed to LCD function.");
+			lcd_puts("Unknown value");
+			lcd_gotoxy(0,1);
+			lcd_puts("to LCD function");
 	}
 
 }
