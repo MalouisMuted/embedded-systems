@@ -20,6 +20,7 @@
 
 #include <avr/io.h>
 #include <stdlib.h>
+#include <util/delay.h>
 #include "lcd.h" // LCD Library by Peter Fleury.
 #include "keypad.h" // Keypad Library by https://www.exploreembedded.com/wiki/AVR_C_Library
 
@@ -89,13 +90,26 @@ void SPI_init();
 char *SPI_communicate();
 void EEPROM_write(char write_data[32]);
 char *EEPROM_read();
+/* Counters */
+void init_pwm_counter();
+void turn_off_pwm_counter();
+void turn_on_pwm_counter(); 
+void init_time_out_counter();
+void turn_on_time_out_counter();
+void turn_off_time_out_counter();
 
 int main(void)
 {
+	// Enabling global interrupts.
+	sei();
 	// LCD, SPI and Keypad initialization.
 	lcd_init(LCD_DISP_ON);
 	KEYPAD_Init();
 	SPI_init();
+	
+	/* Init counters */
+	init_pwm_counter();
+	init_time_out_counter();
 	
 	// INIT of UART
 	USART_init(MYUBRR);
@@ -111,6 +125,8 @@ int main(void)
 				display_message(0, 0);
 				//Checks if uno has detected movement. There are two responses 1."detected motion\n" 2."no motion\n"
 				char *recived = SPI_communicate();
+				turn_on_pwm_counter(); // On just for debug.
+				turn_on_time_out_counter();
 				free(recived);
 				/*Todo*/
 				break;
@@ -258,4 +274,72 @@ char *EEPROM_read()
 		memory_data[address_index] = EEDR;
 	}
 	return memory_data;
+}
+
+
+void init_pwm_counter() {
+	/* Based on exercise 7 solution. 
+	   Setting digital pin 5 as PWM output. OC3A output is on the pin 5.*/
+	DDRE |= (1 << PE3); 
+	/* set up the 16-bit timer/counter3, mode 9 */
+	TCCR3B = 0; // reset timer/counter 3
+	TCNT3  = 0;
+	TCCR3A |= (1 << 6); // set compare output mode to toggle
+	
+	// mode 9 phase correct
+	TCCR3A |= (1 << 0); // set register A WGM[1:0] bits
+	TCCR3B |= (1 << 4); // set register B WBM[3:2] bits
+
+	TIMSK3 |= (1 << 1); // enable compare match A interrupt
+	OCR3A = 8000; // Should be about 1000 hz.
+}
+
+void turn_off_pwm_counter() {
+	/* This should turn off timer counter. */
+	TCCR3B |= 0b00000000;
+}
+
+void turn_on_pwm_counter() {
+	/* Enabling timer counter 3 with no prescaling. */
+	TCNT3  = 0;
+	TCCR3B |= (1 << 0); 
+}
+
+void init_time_out_counter() {
+		/* Based on exercise 7 solution. 
+	       set up the 16-bit timer/counter1, mode 4, CTC mode. */
+	    TCCR1B = 0; // reset timer/counter 3
+	    TCNT1  = 0;
+		// Mode 4
+		TCCR1A |= 0b00000010;
+		TIMSK1 |= (1 << 1); // enable compare match A interrupt
+		OCR1A = 39063; //  0.2 Hz with 1024 preScaler, so it should be 5s.
+}
+
+void turn_on_time_out_counter() {
+	TCNT1  = 0;
+	/* Enable timer/counter1 with PreScaler 1024 */
+	TCCR1B |= 0b00000101;
+}
+
+void turn_off_time_out_counter() {
+	/* This should turn off timer counter. */
+	TCCR1B |= 0b00000000;
+}
+
+/* timer/counter1 compare match A interrupt vector. Used for password time-out. CTC mode automatically resets to zero on compare match.*/
+ISR
+(TIMER1_COMPA_vect)
+{
+	display_message(5,0);
+	turn_on_time_out_counter();
+	_delay_ms(1500); // Only for alpha testing of the timer to make sure the lcd is not over written immediately.
+	
+}
+
+/* timer/counter3 compare match A interrupt vector. Used for PWM for the buzzer. Needs to be reset manually. */
+ISR
+(TIMER3_COMPA_vect)
+{
+	TCNT1 = 0; 
 }
