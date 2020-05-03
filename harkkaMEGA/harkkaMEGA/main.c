@@ -8,6 +8,10 @@
 #include <avr/io.h>
 #include "lcd.h" // LCD Library by Peter Fleury.
 
+#define CHECK_SENSOR 0
+#define ALARM 1
+#define KEYPAD 2
+
 #define F_CPU 16000000UL
 
 const char message1_connection_established[] = "Alarm connected successfully";
@@ -16,6 +20,11 @@ const char message3_give_password[] = "Type password to reset";
 const char message4_password_correct[] = "Password given, alarm will reset";
 const char message5_password_time_out[] = "Password time-out error.";
 
+int8_t g_state = 0;
+
+/* Fucntion declarations */
+void display_message(int message_number, int password_length); 
+
 int main(void)
 {
 	// LCD initialization.
@@ -23,6 +32,20 @@ int main(void)
     /* Replace with your application code */
     while (1) 
     {
+		switch (g_state) 
+		{
+			case CHECK_SENSOR:
+				display_message(0, 0);
+				/*Todo*/
+				break;
+			case ALARM:
+				/*Todo*/
+				break;
+			case KEYPAD:
+				/*Todo*/
+				break;
+		}
+		
 		display_message(0, 0);
     }
 }
