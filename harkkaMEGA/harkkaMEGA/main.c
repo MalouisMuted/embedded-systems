@@ -103,6 +103,9 @@ int main(void)
 		{
 			case CHECK_SENSOR:
 				display_message(0, 0);
+				//Checks if uno has detected movement. There are two responses 1."detected motion\n" 2."no motion\n"
+				char *recived = SPI_communicate();
+				free(recived);
 				/*Todo*/
 				break;
 			case ALARM:
