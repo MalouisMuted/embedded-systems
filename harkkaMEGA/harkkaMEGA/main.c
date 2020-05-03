@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include "lcd.h" // LCD Library by Peter Fleury.
 #include "keypad.h" // Keypad Library by https://www.exploreembedded.com/wiki/AVR_C_Library
-#include "eeprom.h" // Keypad Library by https://www.exploreembedded.com/wiki/AVR_C_Library
+
 
 //UART for debugging 
 #include <avr/interrupt.h>
@@ -81,13 +81,14 @@ const char message5_1_password_time_out[] = "Password time-";
 const char message5_2_password_time_out[] = "out error";
 
 int8_t g_state = 0;
+uint16_t memory_address_max = 32; //for EEPROM, NOTE: not actual max, just there is no need for more
 
 /* Function declarations */
 void display_message(int message_number, int password_length); 
 void SPI_init();
 char *SPI_communicate();
-void EEPROM_WriteString(unsigned int eeprom_address, unsigned char * source_address);
-void EEPROM_ReadString(unsigned int eeprom_address, unsigned char * destination_address);
+void EEPROM_write(char write_data[32]);
+char *EEPROM_read();
 
 int main(void)
 {
@@ -226,26 +227,35 @@ char *SPI_communicate()
 	return spi_receive_data;
 }
 
-void EEPROM_WriteString(unsigned int eeprom_address, unsigned char * source_address)
+void EEPROM_write(char write_data[32])
 {
-	
-	do
+	for (uint16_t address_index = 0; address_index < sizeof(write_data); address_index++)
 	{
-		EEPROM_WriteByte(eeprom_address,*source_address); //Write a byte from RAM to EEPROM
-		source_address++;					    //Increment the RAM Address
-		eeprom_address++;					   //Increment the Eeprom Address
-	} while(*(source_address-1) !=0);
+		while(EECR & (1 << 1))
+		{
+			/* wait for the previous write operation to end */
+		}
+		
+		EEAR = address_index;
+		EEDR = write_data[address_index];
+		EECR |= (1 << 2); // master programming enable
+		EECR |= (1 << 1); // EEPROM programming enable
+	}
 }
 
-void EEPROM_ReadString(unsigned int eeprom_address, unsigned char * destination_address)
+char *EEPROM_read()
 {
-	char eeprom_data;
-	
-	do
+	char* memory_data = malloc(32);
+	for (uint16_t address_index = 0; address_index < memory_address_max; address_index++)
 	{
-		eeprom_data = EEPROM_ReadByte(eeprom_address); //Read a byte from EEPROM to RAM
-		*destination_address = eeprom_data;	       //Copy the data into String Buffer
-		destination_address++;			      //Increment the RAM Address
-		eeprom_address++;			     //Increment the Eeprom Address
-	}while(eeprom_data!=0);
+		while(EECR & (1 << 1))
+		{
+			/* wait for the previous write operation to end */
+		}
+		
+		EEAR  = address_index;
+		EECR |= 0x01; // enable EEPROM read
+		memory_data[address_index] = EEDR;
+	}
+	return memory_data;
 }
