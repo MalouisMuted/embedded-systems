@@ -73,13 +73,13 @@ FILE uart_output = FDEV_SETUP_STREAM(USART_Transmit, NULL, _FDEV_SETUP_WRITE);
 FILE uart_input = FDEV_SETUP_STREAM(NULL, USART_Receive, _FDEV_SETUP_READ);
 // ----------------------------------
 
-const char message1_connection_established[] = "SPI OK";
-const char message2_movement_detected[] = "Movement found";
-const char message3_give_password[] = "Type password";
-const char message4_1_password_correct[] = "Password given,";
-const char message4_2_password_correct[] = "alarm reset";
-const char message5_1_password_time_out[] = "Password time-";
-const char message5_2_password_time_out[] = "out error";
+const char message1_connection_established[20] = "SPI OK";
+const char message2_movement_detected[20] = "Movement found";
+const char message3_give_password[20] = "Type password";
+const char message4_1_password_correct[20] = "Password given,";
+const char message4_2_password_correct[20] = "alarm reset";
+const char message5_1_password_time_out[20] = "Password time-";
+const char message5_2_password_time_out[20] = "out error";
 
 int8_t g_state = 0;
 uint16_t memory_address_max = 32; //for EEPROM, NOTE: not actual max, just there is no need for more
@@ -142,7 +142,7 @@ int main(void)
 				*/
 				break;
 		}
-		
+		_delay_ms(40);
 		display_message(0, 0);
     }
 }
@@ -155,6 +155,9 @@ void display_message(int message_number, int password_length)
 	lcd_clrscr();
 	switch (message_number)
 	{
+		case 0:
+			lcd_puts("testi");
+			break;
 		case 1:
 			lcd_puts(message1_connection_established);
 			break;
@@ -279,19 +282,23 @@ char *EEPROM_read()
 
 void init_pwm_counter() {
 	/* Based on exercise 7 solution. 
-	   Setting digital pin 5 as PWM output. OC3A output is on the pin 5.*/
-	DDRE |= (1 << PE3); 
+	   Setting digital pin 6 as PWM output. OC4A output is on the pin 6.*/
+	DDRH |= (1 << PH3); 
 	/* set up the 16-bit timer/counter3, mode 9 */
 	TCCR3B = 0; // reset timer/counter 3
 	TCNT3  = 0;
-	TCCR3A |= (1 << 6); // set compare output mode to toggle
+	
+	/************************************************************************/
+	/* this is causing lcd data some errors resulting in a currupted output */
+	/************************************************************************/
+	//TCCR3A |= (1 << 6); // set compare output mode to toggle
 	
 	// mode 9 phase correct
 	TCCR3A |= (1 << 0); // set register A WGM[1:0] bits
 	TCCR3B |= (1 << 4); // set register B WBM[3:2] bits
 
 	TIMSK3 |= (1 << 1); // enable compare match A interrupt
-	OCR3A = 8000; // Should be about 1000 hz.
+	OCR4A = 8000; // Should be about 1000 hz.
 }
 
 void turn_off_pwm_counter() {
