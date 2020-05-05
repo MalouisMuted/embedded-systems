@@ -85,6 +85,7 @@ const char message5_2_password_time_out[20] = "out error";
 int8_t g_state = 0;
 bool pwm_timer_on = false;
 bool time_out_timer_on = false;
+int counter = 0;
 uint16_t memory_address_max = 32; //for EEPROM, NOTE: not actual max, just there is no need for more
 
 /* Function declarations */
@@ -129,6 +130,7 @@ int main(void)
 				//Checks if uno has detected movement. There are two responses 1."detected motion\n" 2."no motion\n"
 				char *recived = SPI_communicate();
 				turn_on_pwm_counter(); // On just for debug.
+				printf("Timer interrupts: %d", counter);
 				turn_on_time_out_counter();
 				free(recived);
 				/*Todo*/
@@ -145,7 +147,7 @@ int main(void)
 				*/
 				break;
 		}
-		_delay_ms(40);
+		_delay_ms(500);
 		display_message(0, 0);
     }
 }
@@ -320,19 +322,20 @@ void turn_on_pwm_counter() {
 }
 
 void init_time_out_counter() {
-	/* Based on exercise 7 solution. 
-	    set up the 16-bit timer/counter5, mode 4, CTC mode. */
+	/* set up the 16-bit timer/counter5, CTC mode.  */
+	cli(); // Disable interrupts.
 	// reset timer/counter 5
 	TCCR5A = 0;
-	TCCR5B = 0; 
-	TCNT5  = 0;
-	/*  Configuring mode 4, CTC mode. */
-	TCCR5A = (1 << WGM51); //0b00000010
-	TCCR5B = (1 << WGM52);  //0b00001000
-	TCCR5A = (1 << COM5A1); // Clear OC1A on compare match //0b10000000
+	TCCR5B = 0;
+	TCNT5 = 0;
+	/*  Configuring CTC mode. */
+	TCCR5B |= (1 << WGM52);
 	
 	TIMSK5 |= (1 << 1); // enable compare match A interrupt
-	OCR5A = 39063; //  0.2 Hz with 1024 preScaler, so it should be 5s.
+	 // ~0.239 Hz (16000000/((65530+1)*1024)), so it should be little over 4s.
+	OCR5A = 65530; 
+	sei(); // Allow interrupts.
+
 }
 
 void turn_on_time_out_counter() {
@@ -340,12 +343,14 @@ void turn_on_time_out_counter() {
 	{
 		return;
 	}
+	cli(); // Disable interrupts.
 	TCNT5  = 0;
 	/* Enable timer/counter1 with PreScaler 1024. 0b00001101 */
 	TCCR5B = (1 << WGM52);  //0b00001000
 	TCCR5B = (1 << CS52);
 	TCCR5B = (1 << CS50);
 	time_out_timer_on = true;
+	sei(); // Allow interrupts.
 }
 
 void turn_off_time_out_counter() {
@@ -359,6 +364,8 @@ ISR
 (TIMER5_COMPA_vect)
 {
 	TCNT5 = 0;
+	//printf("Timer5 Interrupt");
+	counter++;
 	//display_message(5,0);
 	//turn_off_time_out_counter();
 	//turn_off_pwm_counter();
