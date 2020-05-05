@@ -354,10 +354,11 @@ void turn_off_time_out_counter() {
 	pwm_timer_on = false;
 }
 
-/* timer/counter1 compare match A interrupt vector. Used for password time-out. CTC mode automatically resets to zero on compare match.*/
+/* timer/counter1 compare match A interrupt vector. Used for password time-out.*/
 ISR
 (TIMER1_COMPA_vect)
 {
+	TCNT1 = 0;
 	display_message(5,0);
 	turn_off_time_out_counter();
 	turn_off_pwm_counter();
