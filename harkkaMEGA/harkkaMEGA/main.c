@@ -290,10 +290,6 @@ void init_pwm_counter() {
 	TCCR4B = 0; // reset timer/counter 4
 	TCNT4  = 0;
 	
-	/************************************************************************/
-	/* this is causing lcd data some errors resulting in a currupted output */
-	/* TODO TEST THIS! Does it work now.
-	/************************************************************************/
 	TCCR4A |= (1 << 6); // set compare output mode to toggle. This will output the PWM signal on pin 6 (PH3)
 	
 	// mode 9 phase correct
