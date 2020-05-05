@@ -30,6 +30,7 @@
 #include <util/delay.h>
 #include <util/setbaud.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 static void USART_init(uint16_t ubrr)
 {
