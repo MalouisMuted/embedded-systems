@@ -314,6 +314,7 @@ void turn_on_pwm_counter() {
 		return;
 	}
 	TCNT4  = 0;
+	TCCR4B |= (1 << 4); // set register B WBM[3:2] bits
 	TCCR4B |= (1 << 0);
 	pwm_timer_on = true; 
 }
@@ -321,10 +322,15 @@ void turn_on_pwm_counter() {
 void init_time_out_counter() {
 	/* Based on exercise 7 solution. 
 	    set up the 16-bit timer/counter1, mode 4, CTC mode. */
-	TCCR1B = 0; // reset timer/counter 1
+	// reset timer/counter 1
+	TCCR1A = 0;
+	TCCR1B = 0; 
 	TCNT1  = 0;
-	// Mode 4
-	TCCR1A |= 0b00000010;
+	/*  Configuring mode 4, CTC mode. */
+	TCCR1A = (1 << WGM11); //0b00000010
+	TCCR1B = (1 << WGM12);  //0b00001000
+	TCCR1A = (1 << COM1A1); // Clear OC1A on compare match //0b10000000
+	
 	TIMSK1 |= (1 << 1); // enable compare match A interrupt
 	OCR1A = 39063; //  0.2 Hz with 1024 preScaler, so it should be 5s.
 }
@@ -335,8 +341,10 @@ void turn_on_time_out_counter() {
 		return;
 	}
 	TCNT1  = 0;
-	/* Enable timer/counter1 with PreScaler 1024 */
-	TCCR1B |= 0b00000101;
+	/* Enable timer/counter1 with PreScaler 1024. 0b00001101 */
+	TCCR1B = (1 << WGM12);  //0b00001000
+	TCCR1B = (1 << CS12);
+	TCCR1B = (1 << CS10);
 	time_out_timer_on = true;
 }
 
@@ -351,8 +359,11 @@ ISR
 (TIMER1_COMPA_vect)
 {
 	display_message(5,0);
-	turn_on_time_out_counter();
+	turn_off_time_out_counter();
+	turn_off_pwm_counter();
 	_delay_ms(1500); // Only for alpha testing of the timer to make sure the lcd is not over written immediately.
+	turn_on_pwm_counter();
+	turn_on_time_out_counter();
 	
 }
 
