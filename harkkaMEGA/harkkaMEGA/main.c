@@ -284,43 +284,44 @@ void init_pwm_counter() {
 	/* Based on exercise 7 solution. 
 	   Setting digital pin 6 as PWM output. OC4A output is on the pin 6.*/
 	DDRH |= (1 << PH3); 
-	/* set up the 16-bit timer/counter3, mode 9 */
-	TCCR3B = 0; // reset timer/counter 3
-	TCNT3  = 0;
+	/* set up the 16-bit timer/counter4, mode 9 */
+	TCCR4B = 0; // reset timer/counter 4
+	TCNT4  = 0;
 	
 	/************************************************************************/
 	/* this is causing lcd data some errors resulting in a currupted output */
+	/* TODO TEST THIS! Does it work now.
 	/************************************************************************/
-	//TCCR3A |= (1 << 6); // set compare output mode to toggle
+	TCCR4A |= (1 << 6); // set compare output mode to toggle. This will output the PWM signal on pin 6 (PH3)
 	
 	// mode 9 phase correct
-	TCCR3A |= (1 << 0); // set register A WGM[1:0] bits
-	TCCR3B |= (1 << 4); // set register B WBM[3:2] bits
+	TCCR4A |= (1 << 0); // set register A WGM[1:0] bits
+	TCCR4B |= (1 << 4); // set register B WBM[3:2] bits
 
-	TIMSK3 |= (1 << 1); // enable compare match A interrupt
+	TIMSK4 |= (1 << 1); // enable compare match A interrupt
 	OCR4A = 8000; // Should be about 1000 hz.
 }
 
 void turn_off_pwm_counter() {
 	/* This should turn off timer counter. */
-	TCCR3B |= 0b00000000;
+	TCCR4B |= 0b00000000;
 }
 
 void turn_on_pwm_counter() {
-	/* Enabling timer counter 3 with no prescaling. */
-	TCNT3  = 0;
-	TCCR3B |= (1 << 0); 
+	/* Enabling timer counter 4 with no prescaling. */
+	TCNT4  = 0;
+	TCCR4B |= (1 << 0); 
 }
 
 void init_time_out_counter() {
-		/* Based on exercise 7 solution. 
-	       set up the 16-bit timer/counter1, mode 4, CTC mode. */
-	    TCCR1B = 0; // reset timer/counter 3
-	    TCNT1  = 0;
-		// Mode 4
-		TCCR1A |= 0b00000010;
-		TIMSK1 |= (1 << 1); // enable compare match A interrupt
-		OCR1A = 39063; //  0.2 Hz with 1024 preScaler, so it should be 5s.
+	/* Based on exercise 7 solution. 
+	    set up the 16-bit timer/counter1, mode 4, CTC mode. */
+	TCCR1B = 0; // reset timer/counter 1
+	TCNT1  = 0;
+	// Mode 4
+	TCCR1A |= 0b00000010;
+	TIMSK1 |= (1 << 1); // enable compare match A interrupt
+	OCR1A = 39063; //  0.2 Hz with 1024 preScaler, so it should be 5s.
 }
 
 void turn_on_time_out_counter() {
@@ -344,9 +345,9 @@ ISR
 	
 }
 
-/* timer/counter3 compare match A interrupt vector. Used for PWM for the buzzer. Needs to be reset manually. */
+/* timer/counter4 compare match A interrupt vector. Used for PWM for the buzzer. Needs to be reset manually. */
 ISR
-(TIMER3_COMPA_vect)
+(TIMER4_COMPA_vect)
 {
-	TCNT1 = 0; 
+	TCNT4 = 0; 
 }
