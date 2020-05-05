@@ -82,6 +82,8 @@ const char message5_1_password_time_out[20] = "Password time-";
 const char message5_2_password_time_out[20] = "out error";
 
 int8_t g_state = 0;
+bool pwm_timer_on = false;
+bool time_out_timer_on = false;
 uint16_t memory_address_max = 32; //for EEPROM, NOTE: not actual max, just there is no need for more
 
 /* Function declarations */
@@ -305,12 +307,18 @@ void init_pwm_counter() {
 void turn_off_pwm_counter() {
 	/* This should turn off timer counter. */
 	TCCR4B |= 0b00000000;
+	pwm_timer_on = false; 
 }
 
 void turn_on_pwm_counter() {
 	/* Enabling timer counter 4 with no prescaling. */
+	if (pwm_timer_on)
+	{
+		return;
+	}
 	TCNT4  = 0;
-	TCCR4B |= (1 << 0); 
+	TCCR4B |= (1 << 0);
+	pwm_timer_on = true; 
 }
 
 void init_time_out_counter() {
@@ -325,14 +333,20 @@ void init_time_out_counter() {
 }
 
 void turn_on_time_out_counter() {
+	if (time_out_timer_on)
+	{
+		return;
+	}
 	TCNT1  = 0;
 	/* Enable timer/counter1 with PreScaler 1024 */
 	TCCR1B |= 0b00000101;
+	time_out_timer_on = true;
 }
 
 void turn_off_time_out_counter() {
 	/* This should turn off timer counter. */
 	TCCR1B |= 0b00000000;
+	pwm_timer_on = false;
 }
 
 /* timer/counter1 compare match A interrupt vector. Used for password time-out. CTC mode automatically resets to zero on compare match.*/
