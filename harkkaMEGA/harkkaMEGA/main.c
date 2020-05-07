@@ -5,9 +5,10 @@
  * Author : Elias, Aleksi, Aku
  */ 
 
+/* State machine states. */
 #define CHECK_SENSOR 0
 #define ALARM 1
-#define KEYPAD 2
+
 
 #define F_CPU 16000000UL
 #define MaxEepromSize 4096
@@ -74,6 +75,7 @@ FILE uart_output = FDEV_SETUP_STREAM(USART_Transmit, NULL, _FDEV_SETUP_WRITE);
 FILE uart_input = FDEV_SETUP_STREAM(NULL, USART_Receive, _FDEV_SETUP_READ);
 // ----------------------------------
 
+/* LCD messages. */
 const char message1_connection_established[20] = "SPI OK";
 const char message2_movement_detected[20] = "Movement found";
 const char message3_give_password[20] = "Type password";
@@ -84,7 +86,6 @@ const char message5_2_password_time_out[20] = "out error";
 
 int8_t g_state = 0;
 bool pwm_timer_on = false;
-bool time_out_timer_on = false;
 int counter = 0;
 uint16_t memory_address_max = 32; //for EEPROM, NOTE: not actual max, just there is no need for more
 
@@ -94,13 +95,11 @@ void SPI_init();
 char *SPI_communicate();
 void EEPROM_write(char write_data[32]);
 char *EEPROM_read();
-/* Counters */
-void init_pwm_counter();
-void turn_off_pwm_counter();
-void turn_on_pwm_counter(); 
-void init_time_out_counter();
-void turn_on_time_out_counter();
-void turn_off_time_out_counter();
+/* Counter for PWM buzzer. */
+void init_pwm_timer();
+void turn_off_pwm_timer();
+void turn_on_pwm_timer(); 
+
 
 int main(void)
 {
@@ -111,9 +110,8 @@ int main(void)
 	KEYPAD_Init();
 	SPI_init();
 	
-	/* Init counters */
-	init_pwm_counter();
-	init_time_out_counter();
+	/* Init timer for PWM. */
+	init_pwm_timer();
 	
 	// INIT of UART
 	USART_init(MYUBRR);
@@ -125,26 +123,23 @@ int main(void)
     {
 		switch (g_state) 
 		{
+			/* Keypad should be read here? */
+						/*Todo*/
+			/*
+			// this works to get the key press recorded 
+			char input_key[2];
+			input_key[0] = KEYPAD_GetKey();
+			*/
 			case CHECK_SENSOR:
 				display_message(0, 0);
 				//Checks if uno has detected movement. There are two responses 1."detected motion\n" 2."no motion\n"
 				char *recived = SPI_communicate();
-				turn_on_pwm_counter(); // On just for debug.
-				printf("Timer interrupts: %d", counter);
-				turn_on_time_out_counter();
+				turn_on_pwm_timer(); // On just for debug.
 				free(recived);
 				/*Todo*/
 				break;
 			case ALARM:
-				/*Todo*/
-				break;
-			case KEYPAD:
-				/*Todo*/
-				/*
-				// this works to get the key press recorded 
-				char input_key[2];
-				input_key[0] = KEYPAD_GetKey();
-				*/
+
 				break;
 		}
 		_delay_ms(500);
@@ -161,7 +156,7 @@ void display_message(int message_number, int password_length)
 	switch (message_number)
 	{
 		case 0:
-			lcd_puts("testi");
+			lcd_puts("test");
 			break;
 		case 1:
 			lcd_puts(message1_connection_established);
@@ -285,7 +280,7 @@ char *EEPROM_read()
 }
 
 
-void init_pwm_counter() {
+void init_pwm_timer() {
 	/* Based on exercise 7 solution. 
 	   Setting digital pin 6 as PWM output. OC4A output is on the pin 6.*/
 	DDRH |= (1 << PH3); 
@@ -303,14 +298,14 @@ void init_pwm_counter() {
 	OCR4A = 8000; // Should be about 1000 hz.
 }
 
-void turn_off_pwm_counter() {
+void turn_off_pwm_timer() {
 	/* This should turn off timer counter. */
 	TCCR4B &= 0b00000000;
 	pwm_timer_on = false; 
 }
 
-void turn_on_pwm_counter() {
-	/* Enabling timer counter 4 with no prescaling. */
+void turn_on_pwm_timer() {
+	/* Enabling timer 4 with no prescaling. */
 	if (pwm_timer_on)
 	{
 		return;
@@ -321,57 +316,6 @@ void turn_on_pwm_counter() {
 	pwm_timer_on = true; 
 }
 
-void init_time_out_counter() {
-	/* set up the 16-bit timer/counter5, CTC mode.  */
-	cli(); // Disable interrupts.
-	// reset timer/counter 5
-	TCCR5A = 0;
-	TCCR5B = 0;
-	TCNT5 = 0;
-	/*  Configuring CTC mode. */
-	TCCR5B |= (1 << WGM52);
-	
-	TIMSK5 |= (1 << 1); // enable compare match A interrupt
-	 // ~0.239 Hz (16000000/((65530+1)*1024)), so it should be little over 4s.
-	OCR5A = 65530; 
-	sei(); // Allow interrupts.
-
-}
-
-void turn_on_time_out_counter() {
-	if (time_out_timer_on)
-	{
-		return;
-	}
-	cli(); // Disable interrupts.
-	TCNT5  = 0;
-	/* Enable timer/counter1 with PreScaler 1024. 0b00001101 */
-	TCCR5B = (1 << WGM52);  //0b00001000
-	TCCR5B = (1 << CS52);
-	TCCR5B = (1 << CS50);
-	time_out_timer_on = true;
-	sei(); // Allow interrupts.
-}
-
-void turn_off_time_out_counter() {
-	/* This should turn off timer counter. */
-	TCCR5B &= 0b00000000;
-	pwm_timer_on = false;
-}
-
-/* timer/counter1 compare match A interrupt vector. Used for password time-out.*/
-ISR
-(TIMER5_COMPA_vect)
-{
-	TCNT5 = 0;
-	//printf("Timer5 Interrupt");
-	counter++;
-	//display_message(5,0);
-	//turn_off_time_out_counter();
-	//turn_off_pwm_counter();
-
-	
-}
 
 /* timer/counter4 compare match A interrupt vector. Used for PWM for the buzzer. Needs to be reset manually. */
 ISR
