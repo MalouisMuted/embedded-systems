@@ -150,6 +150,7 @@ int main(void)
 	
 	// INIT of UART
 	memset(keypad_input, " ", 4);
+	EEPROM_write("1234");
 	USART_init(MYUBRR);
 	stdout = &uart_output;
 	stdin = &uart_input;
