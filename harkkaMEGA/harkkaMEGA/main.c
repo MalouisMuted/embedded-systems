@@ -417,7 +417,7 @@ char *EEPROM_read()
 void compare_password()
 {
 	char* valid_pw = EEPROM_read();
-	if (0 == strcmp(valid_pw, user_input)) {
+	if (0 == strcmp(valid_pw, keypad_input)) {
 		log_in();
 		turn_off_pwm_counter();
 	} else {
