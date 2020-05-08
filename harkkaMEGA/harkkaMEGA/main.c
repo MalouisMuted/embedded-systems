@@ -17,6 +17,7 @@
 #define MSG_ALARM_OFF 1
 #define MSG_CHANGING_PW 2
 #define MSG_LOGGED_IN 3
+#define MSG_ALARM_BUZZING 4
 
 // Timeout macros
 #define INPUT_TIMEOUT_STEPS 100
@@ -188,16 +189,16 @@ int main(void)
 				/*Todo*/
 				break;
 			case ALARM:
-				/*Todo*/
+				display_message_vol2(MSG_ALARM_BUZZING);
 				break;
 			case LOGGED_OUT:
-				/*Todo*/
+				display_message_vol2(MSG_ALARM_OFF);
 				break;
 			case LOGGED_IN:
-				/*Todo*/
+				display_message_vol2(MSG_LOGGED_IN);
 				break;
 			case CHANGE_PW:
-				/*Todo*/
+				display_message_vol2(MSG_CHANGING_PW);
 				break;
 		}
 		_delay_ms(50);
@@ -260,13 +261,16 @@ void display_message_vol2(int msg_number) {
 	lcd_clrscr();
 	switch (msg_number) {
 		case MSG_ALARM_ON:
-			lcd_puts("Logged out. Alarm on");
+			lcd_puts("Logged out. Alarm on.");
 			break;
 		case MSG_ALARM_OFF:
-			lcd_puts("Logged out. Alarm off");
+			lcd_puts("Logged out. Alarm off.");
 			break;
 		case MSG_CHANGING_PW:
-			lcd_puts("Changing password");
+			lcd_puts("Changing password.");
+			break;
+		case MSG_ALARM_BUZZING:
+			lcd_puts("Alarm is buzzing.");
 			break;
 		case MSG_LOGGED_IN:
 			lcd_puts("Logged in. Choose action.");
@@ -274,7 +278,7 @@ void display_message_vol2(int msg_number) {
 			lcd_puts("A. B. C.");
 			break;
 		default:
-			lcd_puts("Unknown message");
+			lcd_puts("Unknown message.");
 	}
 }
 
