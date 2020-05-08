@@ -104,7 +104,7 @@ bool time_out_timer_on = false;
 bool alarm_toggle = true;
 uint16_t input_timeout_step = 0;
 uint16_t reset_logged_in_step = 0;
-char keypad_input[5] = {'', '', '', '', '\0'};
+char keypad_input[5];
 int8_t keypad_input_index = 0;
 
 int counter = 0;
@@ -149,6 +149,7 @@ int main(void)
 	init_pwm_timer();
 	
 	// INIT of UART
+	memset(keypad_input, " ", 4);
 	USART_init(MYUBRR);
 	stdout = &uart_output;
 	stdin = &uart_input;
