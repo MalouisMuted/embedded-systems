@@ -415,13 +415,6 @@ char *EEPROM_read()
 
 void compare_password()
 {
-	//Input pw
-	char* user_input = "";
-	char* user_input = "2";
-	char* user_input = "22";
-	char* user_input = "222";
-	char* user_input = "2222";
-
 	char* valid_pw = EEPROM_read();
 	if (0 == strcmp(valid_pw, user_input)) {
 		log_in();
