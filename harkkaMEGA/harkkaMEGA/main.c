@@ -209,7 +209,7 @@ int main(void)
 void reset_input() {
 	keypad_input_index = 0;
 	input_timeout_step = 0;
-	char keypad_input[5] = {'', '', '', '', '\0'};
+	strcpy(keypad_input, "    ");
 }
 
 void change_pw() {
@@ -261,24 +261,24 @@ void display_message_vol2(int msg_number) {
 	lcd_clrscr();
 	switch (msg_number) {
 		case MSG_ALARM_ON:
-			lcd_puts("Logged out. Alarm on.");
+			lcd_puts("Alarm on.");
 			break;
 		case MSG_ALARM_OFF:
-			lcd_puts("Logged out. Alarm off.");
+			lcd_puts("Alarm off.");
 			break;
 		case MSG_CHANGING_PW:
-			lcd_puts("Changing password.");
+			lcd_puts("Changing pw.");
 			break;
 		case MSG_ALARM_BUZZING:
-			lcd_puts("Alarm is buzzing.");
+			lcd_puts("Alarm buzzing.");
 			break;
 		case MSG_LOGGED_IN:
-			lcd_puts("Logged in. Choose action.");
+			lcd_puts("Choose action.");
 			lcd_gotoxy(0,1);
 			lcd_puts("A. B. C.");
 			break;
 		default:
-			lcd_puts("Unknown message.");
+			lcd_puts("Unknown msg.");
 	}
 }
 
