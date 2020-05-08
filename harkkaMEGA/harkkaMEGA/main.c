@@ -160,7 +160,7 @@ int main(void)
 		input_timeout_step++;
 		reset_logged_in_step++;
 
-		if (!(0 == strcmp(NULL, key))) {
+		if (!(0 == strcmp(NULL, KEYPAD_GetKey()))) {
 			take_user_input();
 		}
 
