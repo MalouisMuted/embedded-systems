@@ -3,7 +3,7 @@
  *
  * Created: 23.4.2020 14.59.55
  * Author : Elias, Aleksi, Aku
- */ 
+ */
 
 // State machine macros
 #define ALARM_BUZZING 0
@@ -27,7 +27,7 @@
 //UART for debugging
 #define FOSC 16000000UL // Clock Speed
 #define BAUD 9600
-#define MYUBRR (FOSC/16/BAUD-1)
+#define MYUBRR (FOSC / 16 / BAUD - 1)
 //--------------
 
 #include <avr/io.h>
@@ -35,11 +35,10 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <util/delay.h>
-#include "lcd.h" // LCD Library by Peter Fleury.
+#include "lcd.h"	// LCD Library by Peter Fleury.
 #include "keypad.h" // Keypad Library by https://www.exploreembedded.com/wiki/AVR_C_Library
 
-
-//UART for debugging 
+//UART for debugging
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include <util/setbaud.h>
@@ -48,25 +47,24 @@
 static void USART_init(uint16_t ubrr)
 {
 	/* Set baud rate in the USART Baud Rate Registers (UBRR) */
-	UBRR0H = (unsigned char) (ubrr >> 8);
-	UBRR0L = (unsigned char) ubrr;
-	
+	UBRR0H = (unsigned char)(ubrr >> 8);
+	UBRR0L = (unsigned char)ubrr;
+
 	/* Enable receiver and transmitter on RX0 and TX0 */
 	UCSR0B |= (1 << RXEN0) | (1 << TXEN0);
-	
+
 	/* Set frame format: 8 bit data, 2 stop bit */
 	UCSR0C |= (1 << USBS0) | (3 << UCSZ00);
-	
 }
 
 static void USART_Transmit(unsigned char data, FILE *stream)
 {
 	/* Wait until the transmit buffer is empty*/
-	while(!(UCSR0A & (1 << UDRE0)))
+	while (!(UCSR0A & (1 << UDRE0)))
 	{
 		;
 	}
-	
+
 	/* Puts the data into a buffer, then sends/transmits the data */
 	UDR0 = data;
 }
@@ -74,11 +72,11 @@ static void USART_Transmit(unsigned char data, FILE *stream)
 static char USART_Receive(FILE *stream)
 {
 	/* Wait until the transmit buffer is empty*/
-	while(!(UCSR0A & (1 << UDRE0)))
+	while (!(UCSR0A & (1 << UDRE0)))
 	{
 		;
 	}
-	
+
 	/* Get the received data from the buffer */
 	return UDR0;
 }
@@ -117,7 +115,7 @@ char *EEPROM_read();
 /* Counter for PWM buzzer. */
 void init_pwm_timer();
 void turn_off_pwm_timer();
-void turn_on_pwm_timer(); 
+void turn_on_pwm_timer();
 
 void compare_password();
 void reset_input();
@@ -134,10 +132,10 @@ int main(void)
 	lcd_init(LCD_DISP_ON);
 	KEYPAD_Init();
 	SPI_init();
-	
+
 	/* Init timer for PWM. */
 	init_pwm_timer();
-	
+
 	// INIT of UART
 	memset(keypad_input, " ", 4);
 	EEPROM_write("1234");
@@ -146,87 +144,102 @@ int main(void)
 	stdout = &uart_output;
 	stdin = &uart_input;
 	//----------------
-	
-    while (1) 
-    {
+
+	while (1)
+	{
 		input_timeout_step++;
 		reset_logged_in_step++;
 
-		if (!(0 == strcmp(NULL, KEYPAD_GetKey()))) {
+		if (!(0 == strcmp(NULL, KEYPAD_GetKey())))
+		{
 			take_user_input();
 		}
 
-		if (input_timeout_step > INPUT_TIMEOUT_STEPS) {
+		if (input_timeout_step > INPUT_TIMEOUT_STEPS)
+		{
 			reset_input();
 		}
 
-		if (reset_logged_in_step > RESET_LOGGED_IN_STEPS) {
+		if (reset_logged_in_step > RESET_LOGGED_IN_STEPS)
+		{
 			log_out();
 		}
 
-		switch (g_state) 
+		switch (g_state)
 		{
-			case ALARM_BUZZING:
-				display_message_vol2(MSG_ALARM_BUZZING);
-				break;
-			case ARMED:
-				display_message_vol2(MSG_ARMED);
-				//Checks if uno has detected movement. There are two responses 1."detected motion\n" 2."no motion\n"
-				char *recived = SPI_communicate();
-				if (0 == strcmp("detected motion\n", recived)) {
-					g_state = ALARM_BUZZING;
-					turn_on_pwm_timer();
-				}
-				free(recived);
-				break;
-			case DISAMERD:
-				display_message_vol2(MSG_DISAMERD);
-				break;
-			case CHANGE_PW:
-				display_message_vol2(MSG_CHANGE_PW);
-				break;
+		case ALARM_BUZZING:
+			display_message_vol2(MSG_ALARM_BUZZING);
+			break;
+		case ARMED:
+			display_message_vol2(MSG_ARMED);
+			//Checks if uno has detected movement. There are two responses 1."detected motion\n" 2."no motion\n"
+			char *recived = SPI_communicate();
+			if (0 == strcmp("detected motion\n", recived))
+			{
+				g_state = ALARM_BUZZING;
+				turn_on_pwm_timer();
+			}
+			free(recived);
+			break;
+		case DISAMERD:
+			display_message_vol2(MSG_DISAMERD);
+			break;
+		case CHANGE_PW:
+			display_message_vol2(MSG_CHANGE_PW);
+			break;
 		}
 		_delay_ms(50);
 		display_message(0, 0);
-    }
+	}
 }
 
-void reset_input() {
+void reset_input()
+{
 	keypad_input_index = 0;
 	input_timeout_step = 0;
 	strcpy(keypad_input, "    ");
 }
 
-void change_pw() {
+void change_pw()
+{
 	EEPROM_write(&keypad_input);
 }
 
-void log_in() {
+void log_in()
+{
 	reset_logged_in_step = 0;
 	reset_input();
 	turn_off_pwm_timer();
 	g_state = DISAMERD;
 }
 
-void log_out() {
+void log_out()
+{
 	reset_input();
 	g_state = ARMED;
 }
 
-void take_user_input() {
+void take_user_input()
+{
 	keypad_input[keypad_input_index] = KEYPAD_GetKey();
 	input_timeout_step = 0;
 	keypad_input_index++;
-	
-	if (3 == keypad_input_index && g_state == CHANGE_PW) {
+
+	if (3 == keypad_input_index && g_state == CHANGE_PW)
+	{
 		// User is logged in and wants to change password
 		change_pw();
-	} else if (3 == keypad_input_index && g_state == ARMED) {
+	}
+	else if (3 == keypad_input_index && g_state == ARMED)
+	{
 		// User is logged out and inputted password
 		compare_password();
-	} else if (g_state == DISAMERD) {
+	}
+	else if (g_state == DISAMERD)
+	{
 		// User logged in, 3 actions
-		if (0 == strcmp("B", keypad_input[0])) {
+		if (0 == strcmp("B", keypad_input[0]))
+		{
 			// Action change pw
 			g_state == CHANGE_PW;
 			reset_input();
@@ -235,82 +248,83 @@ void take_user_input() {
 }
 
 /* New funktion for displaying messages and taking one argument*/
-void display_message_vol2(int msg_number) {
+void display_message_vol2(int msg_number)
+{
 	lcd_clrscr();
-	switch (msg_number) {
-		case MSG_ARMED:
-			lcd_puts("Alarm on.");
-			break;
-		case MSG_DISAMERD:
-			lcd_puts("Alarm off.");
-			break;
-		case MSG_CHANGE_PW:
-			lcd_puts("Changing pw.");
-			break;
-		case MSG_ALARM_BUZZING:
-			lcd_puts("Alarm buzzing.");
-			break;
-		default:
-			lcd_puts("Unknown msg.");
+	switch (msg_number)
+	{
+	case MSG_ARMED:
+		lcd_puts("Alarm on.");
+		break;
+	case MSG_DISAMERD:
+		lcd_puts("Alarm off.");
+		break;
+	case MSG_CHANGE_PW:
+		lcd_puts("Changing pw.");
+		break;
+	case MSG_ALARM_BUZZING:
+		lcd_puts("Alarm buzzing.");
+		break;
+	default:
+		lcd_puts("Unknown msg.");
 	}
 }
 
 /* Displays the string matching the message number. Also displays password as '*' depending on password_length. */
-void display_message(int message_number, int password_length) 
+void display_message(int message_number, int password_length)
 {
 	/* Clearing the LCD before displaying new message. */
 	lcd_clrscr();
 	switch (message_number)
 	{
+	case 0:
+		lcd_puts("test");
+		break;
+	case 1:
+		lcd_puts(message1_connection_established);
+		break;
+	case 2:
+		lcd_puts(message2_movement_detected);
+		break;
+	case 3:
+		lcd_puts(message3_give_password);
+		lcd_gotoxy(0, 1);
+		switch (password_length)
+		{
 		case 0:
-			lcd_puts("test");
+			lcd_puts("Password: ");
 			break;
 		case 1:
-			lcd_puts(message1_connection_established);
+			lcd_puts("Password: *");
 			break;
 		case 2:
-			lcd_puts(message2_movement_detected);
+			lcd_puts("Password: **");
 			break;
 		case 3:
-			lcd_puts(message3_give_password);
-			lcd_gotoxy(0,1);
-			switch (password_length)
-			{
-				case 0:
-				lcd_puts("Password: ");
-				break;
-				case 1:
-				lcd_puts("Password: *");
-				break;
-				case 2:
-				lcd_puts("Password: **");
-				break;
-				case 3:
-				lcd_puts("Password: ***");
-				break;
-				case 4:
-				lcd_puts("Password: ****");
-				break;
-				default:
-				lcd_puts("Password: Error");
-			}
+			lcd_puts("Password: ***");
 			break;
 		case 4:
-			lcd_puts(message4_1_password_correct);
-			lcd_gotoxy(0,1);
-			lcd_puts(message4_2_password_correct);
-			break;
-		case 5:
-			lcd_puts(message5_1_password_time_out);
-			lcd_gotoxy(0,1);
-			lcd_puts(message5_2_password_time_out);
+			lcd_puts("Password: ****");
 			break;
 		default:
-			lcd_puts("Unknown value");
-			lcd_gotoxy(0,1);
-			lcd_puts("to LCD function");
+			lcd_puts("Password: Error");
+		}
+		break;
+	case 4:
+		lcd_puts(message4_1_password_correct);
+		lcd_gotoxy(0, 1);
+		lcd_puts(message4_2_password_correct);
+		break;
+	case 5:
+		lcd_puts(message5_1_password_time_out);
+		lcd_gotoxy(0, 1);
+		lcd_puts(message5_2_password_time_out);
+		break;
+	default:
+		lcd_puts("Unknown value");
+		lcd_gotoxy(0, 1);
+		lcd_puts("to LCD function");
 	}
-
 }
 
 /* initialization of SPI communication by setting ports */
@@ -328,28 +342,28 @@ void SPI_init()
 char *SPI_communicate()
 {
 	char spi_send_data[20] = "master to slave\n";
-	char* spi_receive_data = malloc(20);
+	char *spi_receive_data = malloc(20);
 	/* send byte to slave and receive a byte from slave */
 	PORTB &= ~(1 << PB0); // SS LOW
-	for(int8_t spi_data_index = 0; spi_data_index < sizeof(spi_send_data); spi_data_index++)
+	for (int8_t spi_data_index = 0; spi_data_index < sizeof(spi_send_data); spi_data_index++)
 	{
-		
+
 		SPDR = spi_send_data[spi_data_index]; // send byte using SPI data register
-		
-		while(!(SPSR & (1 << SPIF)))
+
+		while (!(SPSR & (1 << SPIF)))
 		{
 			/* wait until the transmission is complete */
 			;
 		}
-		
+
 		spi_receive_data[spi_data_index] = SPDR; // receive byte from the SPI data register
 	}
 	/* End communication */
 	PORTB |= (1 << PB0); // SS HIGH
-	
+
 	//Debugging sending received message to UART
 	printf(spi_receive_data);
-	
+
 	return spi_receive_data;
 }
 
@@ -357,11 +371,11 @@ void EEPROM_write(char write_data[32])
 {
 	for (uint16_t address_index = 0; address_index < sizeof(write_data); address_index++)
 	{
-		while(EECR & (1 << 1))
+		while (EECR & (1 << 1))
 		{
 			/* wait for the previous write operation to end */
 		}
-		
+
 		EEAR = address_index;
 		EEDR = write_data[address_index];
 		EECR |= (1 << 2); // master programming enable
@@ -371,15 +385,15 @@ void EEPROM_write(char write_data[32])
 
 char *EEPROM_read()
 {
-	char* memory_data = malloc(32);
+	char *memory_data = malloc(32);
 	for (uint16_t address_index = 0; address_index < memory_address_max; address_index++)
 	{
-		while(EECR & (1 << 1))
+		while (EECR & (1 << 1))
 		{
 			/* wait for the previous write operation to end */
 		}
-		
-		EEAR  = address_index;
+
+		EEAR = address_index;
 		EECR |= 0x01; // enable EEPROM read
 		memory_data[address_index] = EEDR;
 	}
@@ -388,56 +402,60 @@ char *EEPROM_read()
 
 void compare_password()
 {
-	char* valid_pw = EEPROM_read();
-	if (0 == strcmp(valid_pw, keypad_input)) {
+	char *valid_pw = EEPROM_read();
+	if (0 == strcmp(valid_pw, keypad_input))
+	{
 		log_in();
-	} else {
+	}
+	else
+	{
 		// Invalid pw
 		g_state = ALARM_BUZZING;
 		turn_on_pwm_timer();
 	}
 }
 
-void init_pwm_timer() {
+void init_pwm_timer()
+{
 	/* Based on exercise 7 solution. 
 	   Setting digital pin 6 as PWM output. OC4A output is on the pin 6.*/
-	DDRH |= (1 << PH3); 
+	DDRH |= (1 << PH3);
 	/* set up the 16-bit timer/counter4, mode 9 */
 	TCCR4B = 0; // reset timer/counter 4
-	TCNT4  = 0;
-	
+	TCNT4 = 0;
+
 	TCCR4A |= (1 << 6); // set compare output mode to toggle. This will output the PWM signal on pin 6 (PH3)
-	
+
 	// mode 9 phase correct
 	TCCR4A |= (1 << 0); // set register A WGM[1:0] bits
 	TCCR4B |= (1 << 4); // set register B WBM[3:2] bits
 
 	TIMSK4 |= (1 << 1); // enable compare match A interrupt
-	OCR4A = 8000; // Should be about 1000 hz.
+	OCR4A = 8000;		// Should be about 1000 hz.
 }
 
-void turn_off_pwm_timer() {
+void turn_off_pwm_timer()
+{
 	/* This should turn off timer counter. */
 	TCCR4B &= 0b00000000;
-	pwm_timer_on = false; 
+	pwm_timer_on = false;
 }
 
-void turn_on_pwm_timer() {
+void turn_on_pwm_timer()
+{
 	/* Enabling timer 4 with no prescaling. */
 	if (pwm_timer_on)
 	{
 		return;
 	}
-	TCNT4  = 0;
+	TCNT4 = 0;
 	TCCR4B |= (1 << 4); // set register B WBM[3:2] bits
 	TCCR4B |= (1 << 0);
-	pwm_timer_on = true; 
+	pwm_timer_on = true;
 }
 
-
 /* timer/counter4 compare match A interrupt vector. Used for PWM for the buzzer. Needs to be reset manually. */
-ISR
-(TIMER4_COMPA_vect)
+ISR(TIMER4_COMPA_vect)
 {
-	TCNT4 = 0; 
+	TCNT4 = 0;
 }
