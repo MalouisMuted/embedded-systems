@@ -212,6 +212,31 @@ void take_user_input()
 	KEYPAD_WaitForKeyRelease();
 	input_timeout_step = 0;
 	keypad_input_index++;
+	
+	if (0 == strcmp((char*)&key_input[0],"*"))
+	{
+		keypad_input_index--;
+		if (keypad_input_index>0)
+		{
+			keypad_input_index--;
+		}
+	}
+	else if (0 == strcmp((char*)&key_input[0],"A"))
+	{
+		keypad_input_index--;
+	}
+	else if ((0 == strcmp((char*)&key_input[0],"B")) && g_state != DISAMERD)
+	{
+		keypad_input_index--;
+	}
+	else if (0 == strcmp((char*)&key_input[0],"C"))
+	{
+		keypad_input_index--;
+	}
+	else if (0 == strcmp((char*)&key_input[0],"D"))
+	{
+		keypad_input_index--;
+	}
 
 	if (4 == keypad_input_index && g_state == CHANGE_PW)
 	{
@@ -236,7 +261,7 @@ void take_user_input()
 	else if (g_state == DISAMERD)
 	{
 		// User logged in, 3 actions
-		if (0 == strcmp("B", keypad_input[0]))
+		if (0 == strcmp("B", (char*)&key_input[0]))
 		{
 			// Action change pw
 			g_state = CHANGE_PW;
