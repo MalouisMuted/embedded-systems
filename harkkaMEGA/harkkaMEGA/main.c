@@ -115,7 +115,6 @@ void turn_on_pwm_timer();
 void compare_password();
 void reset_input();
 void log_in();
-void log_out();
 void change_pw();
 void take_user_input();
 
@@ -153,11 +152,6 @@ int main(void)
 		if (input_timeout_step > INPUT_TIMEOUT_STEPS)
 		{
 			reset_input();
-		}
-
-		if (reset_logged_in_step > RESET_LOGGED_IN_STEPS)
-		{
-			log_out();
 		}
 
 		switch (g_state)
@@ -207,11 +201,6 @@ void log_in()
 	g_state = DISAMERD;
 }
 
-void log_out()
-{
-	reset_input();
-	g_state = ARMED;
-}
 
 void take_user_input()
 {
