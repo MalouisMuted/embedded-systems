@@ -5,14 +5,20 @@
  * Author : Elias, Aleksi, Aku
  */ 
 
-/* State machine states. */
+// State machine macros
 #define CHECK_SENSOR 0
 #define ALARM 1
+#define LOGGED_IN 2
+#define LOGGED_OUT 3
+#define CHANGE_PW 4
 
-#define LOGGED_IN 3
-#define LOGGED_OUT 4
-#define CHANGE_PW 5
+// Display message macros
+#define MSG_ALARM_ON 0
+#define MSG_ALARM_OFF 1
+#define MSG_CHANGING_PW 2
+#define MSG_LOGGED_IN 3
 
+// Timeout macros
 #define INPUT_TIMEOUT_STEPS 100
 #define RESET_LOGGED_IN_STEPS 400
 
@@ -104,7 +110,8 @@ int counter = 0;
 uint16_t memory_address_max = 32; //for EEPROM, NOTE: not actual max, just there is no need for more
 
 /* Function declarations */
-void display_message(int message_number, int password_length); 
+void display_message(int message_number, int password_length);
+void display_message_vol2(int msg_number);
 void SPI_init();
 char *SPI_communicate();
 void EEPROM_write(char write_data[32]);
@@ -248,6 +255,28 @@ void take_user_input() {
 	}
 }
 
+/* New funktion for displaying messages and taking one argument*/
+void display_message_vol2(int msg_number) {
+	lcd_clrscr();
+	switch (msg_number) {
+		case MSG_ALARM_ON:
+			lcd_puts("Logged out. Alarm on");
+			break;
+		case MSG_ALARM_OFF:
+			lcd_puts("Logged out. Alarm off");
+			break;
+		case MSG_CHANGING_PW:
+			lcd_puts("Changing password");
+			break;
+		case MSG_LOGGED_IN:
+			lcd_puts("Logged in. Choose action.");
+			lcd_gotoxy(0,1);
+			lcd_puts("A. B. C.");
+			break;
+		default:
+			lcd_puts("Unknown message");
+	}
+}
 
 /* Displays the string matching the message number. Also displays password as '*' depending on password_length. */
 void display_message(int message_number, int password_length) 
