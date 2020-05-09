@@ -9,6 +9,12 @@
 #define CHECK_SENSOR 0
 #define ALARM 1
 
+#define LOGGED_IN 3
+#define LOGGED_OUT 4
+#define CHANGE_PW 5
+
+#define INPUT_TIMEOUT_STEPS 100
+#define RESET_LOGGED_IN_STEPS 400
 
 #define F_CPU 16000000UL
 #define MaxEepromSize 4096
@@ -20,6 +26,8 @@
 //--------------
 
 #include <avr/io.h>
+#include <string.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <util/delay.h>
 #include "lcd.h" // LCD Library by Peter Fleury.
@@ -31,7 +39,6 @@
 #include <util/delay.h>
 #include <util/setbaud.h>
 #include <stdio.h>
-#include <stdbool.h>
 
 static void USART_init(uint16_t ubrr)
 {
@@ -86,6 +93,13 @@ const char message5_2_password_time_out[20] = "out error";
 
 int8_t g_state = 0;
 bool pwm_timer_on = false;
+bool time_out_timer_on = false;
+bool alarm_toggle = true;
+uint16_t input_timeout_step = 0;
+uint16_t reset_logged_in_step = 0;
+char keypad_input[5] = {'', '', '', '', '\0'};
+int8_t keypad_input_index = 0;
+
 int counter = 0;
 uint16_t memory_address_max = 32; //for EEPROM, NOTE: not actual max, just there is no need for more
 
@@ -100,6 +114,19 @@ void init_pwm_timer();
 void turn_off_pwm_timer();
 void turn_on_pwm_timer(); 
 
+void compare_password();
+void reset_input();
+void log_in();
+void log_out();
+void change_pw();
+void take_user_input();
+/* Counters */
+void init_pwm_counter();
+void turn_off_pwm_counter();
+void turn_on_pwm_counter(); 
+void init_time_out_counter();
+void turn_on_time_out_counter();
+void turn_off_time_out_counter();
 
 int main(void)
 {
@@ -121,6 +148,21 @@ int main(void)
 	
     while (1) 
     {
+		input_timeout_step++;
+		reset_logged_in_step++;
+
+		if (!(0 == strcmp(NULL, key))) {
+			take_user_input();
+		}
+
+		if (input_timeout_step > INPUT_TIMEOUT_STEPS) {
+			reset_input();
+		}
+
+		if (reset_logged_in_step > RESET_LOGGED_IN_STEPS) {
+			log_out();
+		}
+
 		switch (g_state) 
 		{
 			/* Keypad should be read here? */
@@ -139,12 +181,71 @@ int main(void)
 				/*Todo*/
 				break;
 			case ALARM:
-
+				/*Todo*/
+				break;
+			case LOGGED_OUT:
+				/*Todo*/
+				break;
+			case LOGGED_IN:
+				/*Todo*/
+				break;
+			case CHANGE_PW:
+				/*Todo*/
 				break;
 		}
-		_delay_ms(500);
+		_delay_ms(50);
 		display_message(0, 0);
     }
+}
+
+void reset_input() {
+	keypad_input_index = 0;
+	input_timeout_step = 0;
+	char keypad_input[5] = {'', '', '', '', '\0'};
+}
+
+void change_pw() {
+	EEPROM_write(&keypad_input);
+}
+
+void log_in() {
+	reset_logged_in_step = 0;
+	reset_input();
+	g_state = LOGGED_IN;
+}
+
+void log_out() {
+	reset_input();
+	g_state = LOGGED_OUT;
+}
+
+void take_user_input() {
+	keypad_input[keypad_input_index] = KEYPAD_GetKey();
+	input_timeout_step = 0;
+	keypad_input_index++;
+	
+	if (3 == keypad_input_index && g_state == CHANGE_PW) {
+		// User is logged in and wants to change password
+		change_pw();
+	} else if (3 == keypad_input_index && g_state == LOGGED_OUT) {
+		// User is logged out and inputted password
+		compare_password();
+	} else if (g_state == LOGGED_IN) {
+		// User logged in, 3 actions
+		if (0 == strcmp("A", keypad_input[0])) {
+			// Action change pw
+			g_state == CHANGE_PW;
+			reset_input();
+		} else if (0 == strcmp("B", keypad_input[0])) {
+			// Action turn on alarm
+			alarm_toggle = true;
+			reset_input();
+		} else if (0 == strcmp("C", keypad_input[0])) {
+			// Action turn off alarm
+			alarm_toggle = false;
+			reset_input();
+		}
+	}
 }
 
 
@@ -279,6 +380,23 @@ char *EEPROM_read()
 	return memory_data;
 }
 
+void compare_password()
+{
+	//Input pw
+	char* user_input = "";
+	char* user_input = "2";
+	char* user_input = "22";
+	char* user_input = "222";
+	char* user_input = "2222";
+
+	char* valid_pw = EEPROM_read();
+	if (0 == strcmp(valid_pw, user_input)) {
+		log_in();
+		turn_off_pwm_counter();
+	} else {
+		// Invalid pw
+	}
+}
 
 void init_pwm_timer() {
 	/* Based on exercise 7 solution. 
