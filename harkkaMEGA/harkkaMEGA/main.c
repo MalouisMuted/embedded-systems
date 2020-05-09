@@ -26,7 +26,6 @@
 
 // Timeout macros
 #define INPUT_TIMEOUT_STEPS 100
-#define RESET_LOGGED_IN_STEPS 400
 
 #define F_CPU 16000000UL
 #define MaxEepromSize 4096
@@ -94,7 +93,6 @@ FILE uart_input = FDEV_SETUP_STREAM(NULL, USART_Receive, _FDEV_SETUP_READ);
 
 int8_t g_state;
 bool pwm_timer_on = false;
-bool time_out_timer_on = false;
 uint16_t input_timeout_step = 0;
 char keypad_input[5];
 char key_input[2];
@@ -200,7 +198,6 @@ void reset_input()
 
 void change_pw()
 {
-	//EEPROM_write(&keypad_input);
 	strcpy(password, keypad_input);
 	g_state = DISAMERD;
 }
@@ -232,7 +229,6 @@ void take_user_input()
 	{
 		if (g_state == DISAMERD)
 		{
-			// Action change pw
 			g_state = CHANGE_PW;
 			reset_input();
 		}
@@ -496,7 +492,6 @@ bool compare_password()
 	}
 	else
 	{
-		// Invalid pw
 		display_message_vol2(MSG_PW_INCORRECT);
 		_delay_ms(1000);
 		g_state = ALARM_BUZZING;
