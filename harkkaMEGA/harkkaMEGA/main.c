@@ -106,7 +106,7 @@ uint16_t memory_address_max = 32; //for EEPROM, NOTE: not actual max, just there
 void display_message_vol2(int msg_number);
 void SPI_init();
 int SPI_communicate();
-void EEPROM_write(char write_data[32]);
+void EEPROM_write(char *write_data);
 void EEPROM_read(char *memory_data);
 /* Counter for PWM buzzer. */
 void init_pwm_timer();
@@ -133,7 +133,6 @@ int main(void)
 
 	// INIT of UART
 	memset(keypad_input, " ", 4);
-	//EEPROM_write("1234");
 	USART_init(MYUBRR);
 	g_state = ARMED;
 	stdout = &uart_output;
@@ -150,7 +149,7 @@ int main(void)
 		if (!(0 == strcmp((char*)&key_input[0],"z")))
 		{
 			printf((char*)&key_input[0]);
-			printf(" nyt painettu\n");
+			printf(" nyt painettu ja indexi on %d\n",keypad_input_index);
 			
 			take_user_input();
 		}
@@ -230,7 +229,7 @@ void take_user_input()
 	{
 		// User is logged in and wants to log out
 		if (true == compare_password()) {
-			g_state == ARMED;
+			g_state = ARMED;
 			reset_input();
 		}
 	}
@@ -240,7 +239,7 @@ void take_user_input()
 		if (0 == strcmp("B", keypad_input[0]))
 		{
 			// Action change pw
-			g_state == CHANGE_PW;
+			g_state = CHANGE_PW;
 			reset_input();
 		}
 	}
@@ -390,7 +389,7 @@ int SPI_communicate()
 	return spi_receive_data[0];
 }
 
-void EEPROM_write(char write_data[32])
+void EEPROM_write(char *write_data)
 {
 	for (uint16_t address_index = 0; address_index < sizeof(write_data); address_index++)
 	{
@@ -421,10 +420,8 @@ void EEPROM_read(char *memory_data)
 	}
 }
 
-void compare_password()
+bool compare_password()
 {
-	//char valid_pw = malloc(32);
-	//EEPROM_read(valid_pw);
 	if (0 == strcmp(password, keypad_input))
 	{
 		printf("Salasana on oikein\n");
