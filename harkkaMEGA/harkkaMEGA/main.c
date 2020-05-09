@@ -95,6 +95,7 @@ bool time_out_timer_on = false;
 uint16_t input_timeout_step = 0;
 uint16_t reset_logged_in_step = 0;
 char keypad_input[5];
+char key_input[2];
 int8_t keypad_input_index = 0;
 int revived = NO_MOTION;
 
@@ -143,9 +144,17 @@ int main(void)
 	{
 		input_timeout_step++;
 		reset_logged_in_step++;
-
-		if (!(0 == strcmp(NULL, KEYPAD_GetKey())))
+		
+		key_input[0] = KEYPAD_GetKey();
+		
+		
+		
+		
+		if (!(0 == strcmp((char*)&key_input[0],"z")))
 		{
+			printf((char*)&key_input[0]);
+			printf(" nyt painettu\n");
+			KEYPAD_WaitForKeyRelease();
 			take_user_input();
 		}
 
@@ -307,7 +316,7 @@ int SPI_communicate()
 	PORTB |= (1 << PB0); // SS HIGH
 
 	//Debugging sending received message to UART
-	printf("%d\n",spi_receive_data[0]);	
+	//printf("%d\n",spi_receive_data[0]);	
 	
 	return spi_receive_data[0];
 }
@@ -357,6 +366,7 @@ void compare_password()
 		g_state = ALARM_BUZZING;
 		turn_on_pwm_timer();
 	}
+	free(valid_pw);
 }
 
 void init_pwm_timer()
