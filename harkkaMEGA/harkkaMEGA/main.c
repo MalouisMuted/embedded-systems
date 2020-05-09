@@ -228,9 +228,18 @@ void take_user_input()
 	{
 		keypad_input_index--;
 	}
-	else if ((0 == strcmp((char*)&key_input[0],"B")) && g_state != DISAMERD)
+	else if (0 == strcmp((char*)&key_input[0],"B"))
 	{
-		keypad_input_index--;
+		if (g_state == DISAMERD)
+		{
+			// Action change pw
+			g_state = CHANGE_PW;
+			reset_input();
+		}
+		else
+		{
+			keypad_input_index--;
+		}
 	}
 	else if (0 == strcmp((char*)&key_input[0],"C"))
 	{
@@ -240,12 +249,52 @@ void take_user_input()
 	{
 		keypad_input_index--;
 	}
-
-	if (4 == keypad_input_index && g_state == CHANGE_PW)
+	else if (0 == strcmp((char*)&key_input[0],"#"))
 	{
-		// User is logged in and wants to change password
-		change_pw();
+		if (g_state == CHANGE_PW)
+		{
+			if (4 == keypad_input_index)
+			{
+				// User is logged in and wants to change password
+				change_pw();
+				reset_input();
+			}
+			else
+			{
+				reset_input();
+			}
+			
+		}
+		else if (g_state == ARMED)
+		{
+			if (true == compare_password()) 
+			{
+				log_in();
+			} 
+			else 
+			{
+				g_state == ALARM_BUZZING;
+				turn_on_pwm_timer();
+				reset_input();
+			}
+		}
+		else if (g_state == ALARM_BUZZING)
+		{
+			if (true == compare_password())
+			{
+				log_in();
+			}
+		}
+		else if (g_state == DISAMERD)
+		{
+			if (true == compare_password())
+			{
+				g_state == ARMED;
+				reset_input();
+			}
+		}
 	}
+
 	else if (4 == keypad_input_index && (g_state == ARMED || g_state == ALARM_BUZZING))
 	{
 		// User is logged out and inputted password
@@ -258,16 +307,6 @@ void take_user_input()
 		// User is logged in and wants to log out
 		if (true == compare_password()) {
 			g_state = ARMED;
-			reset_input();
-		}
-	}
-	else if (g_state == DISAMERD)
-	{
-		// User logged in, 3 actions
-		if (0 == strcmp("B", (char*)&key_input[0]))
-		{
-			// Action change pw
-			g_state = CHANGE_PW;
 			reset_input();
 		}
 	}
