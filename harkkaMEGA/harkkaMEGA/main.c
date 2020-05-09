@@ -222,7 +222,7 @@ void take_user_input()
 		// User is logged in and wants to change password
 		change_pw();
 	}
-	else if (4 == keypad_input_index && g_state == ARMED)
+	else if (4 == keypad_input_index && (g_state == ARMED || g_state == ALARM_BUZZING))
 	{
 		// User is logged out and inputted password
 		printf("%s tassa koko salasana\n",keypad_input);
@@ -397,7 +397,7 @@ void EEPROM_read(char *memory_data)
 
 void compare_password()
 {
-	char valid_pw = malloc(32);
+	//char valid_pw = malloc(32);
 	//EEPROM_read(valid_pw);
 	if (0 == strcmp(password, keypad_input))
 	{
