@@ -106,7 +106,7 @@ void display_message_vol2(int msg_number);
 void SPI_init();
 int SPI_communicate();
 void EEPROM_write(char write_data[32]);
-char *EEPROM_read();
+void EEPROM_read(char *memory_data);
 /* Counter for PWM buzzer. */
 void init_pwm_timer();
 void turn_off_pwm_timer();
@@ -328,9 +328,8 @@ void EEPROM_write(char write_data[32])
 	}
 }
 
-char *EEPROM_read()
+void EEPROM_read(char *memory_data)
 {
-	char *memory_data = malloc(32);
 	for (uint16_t address_index = 0; address_index < memory_address_max; address_index++)
 	{
 		while (EECR & (1 << 1))
@@ -342,12 +341,12 @@ char *EEPROM_read()
 		EECR |= 0x01; // enable EEPROM read
 		memory_data[address_index] = EEDR;
 	}
-	return memory_data;
 }
 
 void compare_password()
 {
-	char *valid_pw = EEPROM_read();
+	char valid_pw = malloc(32);
+	EEPROM_read(valid_pw);
 	if (0 == strcmp(valid_pw, keypad_input))
 	{
 		log_in();
