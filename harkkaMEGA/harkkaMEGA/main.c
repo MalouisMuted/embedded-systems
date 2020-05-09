@@ -109,8 +109,8 @@ uint16_t memory_address_max = 32; //for EEPROM, NOTE: not actual max, just there
 void display_message_vol2(int msg_number);
 void SPI_init();
 int SPI_communicate();
-void EEPROM_write(char *write_data);
-void EEPROM_read(char *memory_data);
+//void EEPROM_write(char *write_data);
+//void EEPROM_read(char *memory_data);
 /* Counter for PWM buzzer. */
 void init_pwm_timer();
 void turn_off_pwm_timer();
@@ -198,7 +198,8 @@ void reset_input()
 
 void change_pw()
 {
-	EEPROM_write(&keypad_input);
+	//EEPROM_write(&keypad_input);
+	strcpy(password, keypad_input);
 }
 
 void log_in()
