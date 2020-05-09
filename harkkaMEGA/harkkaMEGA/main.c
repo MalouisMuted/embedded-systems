@@ -246,34 +246,64 @@ void display_message_vol2(int msg_number)
 	switch (msg_number)
 	{
 	case MSG_ARMED:
-		lcd_puts("Alarm armed");
+		if (keypad_input_index == 1) {
+			lcd_puts("Alarm armed");
+			lcd_gotoxy(0, 1);
+			lcd_puts("User input: *");
+		} else if (keypad_input_index == 2) {
+			lcd_puts("Alarm armed");
+			lcd_gotoxy(0, 1);
+			lcd_puts("User input: **");
+		} else if (keypad_input_index == 3) {
+			lcd_puts("Alarm armed");
+			lcd_gotoxy(0, 1);
+			lcd_puts("User input: ***");
+		} else if (keypad_input_index == 4) {
+			lcd_puts("Alarm armed");
+			lcd_gotoxy(0, 1);
+			lcd_puts("User input: ****");
+		}
 		break;
 	case MSG_DISAMERD:
 		lcd_puts("Alarm disarmed");
 		break;
 	case MSG_CHANGE_PW:
-		if (keypad_input_index == 0) {
+		if (keypad_input_index == 1) {
 			lcd_puts("Changing pw");
 			lcd_gotoxy(0, 1);
 			lcd_puts("New pw: *");
-		} else if (keypad_input_index == 1) {
-			lcd_puts("Changing pw");
-			lcd_gotoxy(0, 1);
-			lcd_puts("New pw: **");
 		} else if (keypad_input_index == 2) {
 			lcd_puts("Changing pw");
 			lcd_gotoxy(0, 1);
-			lcd_puts("New pw: ***");
+			lcd_puts("New pw: **");
 		} else if (keypad_input_index == 3) {
+			lcd_puts("Changing pw");
+			lcd_gotoxy(0, 1);
+			lcd_puts("New pw: ***");
+		} else if (keypad_input_index == 4) {
 			lcd_puts("Changing pw");
 			lcd_gotoxy(0, 1);
 			lcd_puts("New pw: ****");
 		}
 		break;
 	case MSG_ALARM_BUZZING:
-		lcd_puts("Alarm buzzing");
-		lcd_gotoxy(0, 1);
-		lcd_puts("Motion detected");
+		if (keypad_input_index == 1) {
+			lcd_puts("Motion detected");
+			lcd_gotoxy(0, 1);
+			lcd_puts("User input: *");
+		} else if (keypad_input_index == 2) {
+			lcd_puts("Motion detected");
+			lcd_gotoxy(0, 1);
+			lcd_puts("User input: **");
+		} else if (keypad_input_index == 3) {
+			lcd_puts("Motion detected");
+			lcd_gotoxy(0, 1);
+			lcd_puts("User input: ***");
+		} else if (keypad_input_index == 4) {
+			lcd_puts("Motion detected");
+			lcd_gotoxy(0, 1);
+			lcd_puts("User input: ****");
+		}
 		break;
 	default:
 		lcd_puts("Unknown msg");
