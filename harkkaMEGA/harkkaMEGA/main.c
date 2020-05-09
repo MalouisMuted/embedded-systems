@@ -93,7 +93,6 @@ int8_t g_state;
 bool pwm_timer_on = false;
 bool time_out_timer_on = false;
 uint16_t input_timeout_step = 0;
-uint16_t reset_logged_in_step = 0;
 char keypad_input[5];
 char key_input[2];
 char password[5] = "1234";
@@ -114,7 +113,7 @@ void init_pwm_timer();
 void turn_off_pwm_timer();
 void turn_on_pwm_timer();
 
-void compare_password();
+bool compare_password();
 void reset_input();
 void log_in();
 void change_pw();
@@ -144,7 +143,6 @@ int main(void)
 	while (1)
 	{
 		input_timeout_step++;
-		reset_logged_in_step++;
 		
 		key_input[0] = KEYPAD_GetKey();
 		
@@ -203,7 +201,6 @@ void change_pw()
 
 void log_in()
 {
-	reset_logged_in_step = 0;
 	reset_input();
 	turn_off_pwm_timer();
 	g_state = DISAMERD;
@@ -225,8 +222,17 @@ void take_user_input()
 	else if (4 == keypad_input_index && (g_state == ARMED || g_state == ALARM_BUZZING))
 	{
 		// User is logged out and inputted password
-		printf("%s tassa koko salasana\n",keypad_input);
-		compare_password();
+		if (true == compare_password()) {
+			log_in();
+		}
+	}
+	else if (4 == keypad_input_index && g_state == DISAMERD)
+	{
+		// User is logged in and wants to log out
+		if (true == compare_password()) {
+			g_state == ARMED;
+			reset_input();
+		}
 	}
 	else if (g_state == DISAMERD)
 	{
@@ -402,13 +408,14 @@ void compare_password()
 	if (0 == strcmp(password, keypad_input))
 	{
 		printf("Salasana on oikein\n");
-		log_in();
+		return true;
 	}
 	else
 	{
 		// Invalid pw
 		g_state = ALARM_BUZZING;
 		turn_on_pwm_timer();
+		return false;
 	}
 }
 
