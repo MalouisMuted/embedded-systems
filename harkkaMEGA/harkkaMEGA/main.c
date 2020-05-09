@@ -147,14 +147,12 @@ int main(void)
 		
 		key_input[0] = KEYPAD_GetKey();
 		
-		
-		
-		
+				
 		if (!(0 == strcmp((char*)&key_input[0],"z")))
 		{
 			printf((char*)&key_input[0]);
 			printf(" nyt painettu\n");
-			KEYPAD_WaitForKeyRelease();
+			
 			take_user_input();
 		}
 
@@ -214,17 +212,19 @@ void log_in()
 void take_user_input()
 {
 	keypad_input[keypad_input_index] = KEYPAD_GetKey();
+	KEYPAD_WaitForKeyRelease();
 	input_timeout_step = 0;
 	keypad_input_index++;
 
-	if (3 == keypad_input_index && g_state == CHANGE_PW)
+	if (4 == keypad_input_index && g_state == CHANGE_PW)
 	{
 		// User is logged in and wants to change password
 		change_pw();
 	}
-	else if (3 == keypad_input_index && g_state == ARMED)
+	else if (4 == keypad_input_index && g_state == ARMED)
 	{
 		// User is logged out and inputted password
+		printf("%s tassa koko salasana\n",keypad_input);
 		compare_password();
 	}
 	else if (g_state == DISAMERD)
