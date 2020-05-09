@@ -6,18 +6,16 @@
  */ 
 
 // State machine macros
-#define CHECK_SENSOR 0
-#define ALARM 1
-#define LOGGED_IN 2
-#define LOGGED_OUT 3
-#define CHANGE_PW 4
+#define ALARM_BUZZING 0
+#define ARMED 1
+#define DISAMERD 2
+#define CHANGE_PW 3
 
 // Display message macros
-#define MSG_ALARM_ON 0
-#define MSG_ALARM_OFF 1
-#define MSG_CHANGING_PW 2
-#define MSG_LOGGED_IN 3
-#define MSG_ALARM_BUZZING 4
+#define MSG_ALARM_BUZZING 0
+#define MSG_ARMED 1
+#define MSG_DISAMERD 2
+#define MSG_CHANGE_PW 3
 
 // Timeout macros
 #define INPUT_TIMEOUT_STEPS 100
@@ -98,10 +96,9 @@ const char message4_2_password_correct[20] = "alarm reset";
 const char message5_1_password_time_out[20] = "Password time-";
 const char message5_2_password_time_out[20] = "out error";
 
-int8_t g_state = 0;
+int8_t g_state;
 bool pwm_timer_on = false;
 bool time_out_timer_on = false;
-bool alarm_toggle = true;
 uint16_t input_timeout_step = 0;
 uint16_t reset_logged_in_step = 0;
 char keypad_input[5];
@@ -128,13 +125,6 @@ void log_in();
 void log_out();
 void change_pw();
 void take_user_input();
-/* Counters */
-void init_pwm_counter();
-void turn_off_pwm_counter();
-void turn_on_pwm_counter(); 
-void init_time_out_counter();
-void turn_on_time_out_counter();
-void turn_off_time_out_counter();
 
 int main(void)
 {
@@ -152,6 +142,7 @@ int main(void)
 	memset(keypad_input, " ", 4);
 	EEPROM_write("1234");
 	USART_init(MYUBRR);
+	g_state = ARMED;
 	stdout = &uart_output;
 	stdin = &uart_input;
 	//----------------
@@ -175,32 +166,24 @@ int main(void)
 
 		switch (g_state) 
 		{
-			/* Keypad should be read here? */
-						/*Todo*/
-			/*
-			// this works to get the key press recorded 
-			char input_key[2];
-			input_key[0] = KEYPAD_GetKey();
-			*/
-			case CHECK_SENSOR:
-				display_message(0, 0);
-				//Checks if uno has detected movement. There are two responses 1."detected motion\n" 2."no motion\n"
-				char *recived = SPI_communicate();
-				turn_on_pwm_timer(); // On just for debug.
-				free(recived);
-				/*Todo*/
-				break;
-			case ALARM:
+			case ALARM_BUZZING:
 				display_message_vol2(MSG_ALARM_BUZZING);
 				break;
-			case LOGGED_OUT:
-				display_message_vol2(MSG_ALARM_OFF);
+			case ARMED:
+				display_message_vol2(MSG_ARMED);
+				//Checks if uno has detected movement. There are two responses 1."detected motion\n" 2."no motion\n"
+				char *recived = SPI_communicate();
+				if (0 == strcmp("detected motion\n", recived)) {
+					g_state = ALARM_BUZZING;
+					turn_on_pwm_timer();
+				}
+				free(recived);
 				break;
-			case LOGGED_IN:
-				display_message_vol2(MSG_LOGGED_IN);
+			case DISAMERD:
+				display_message_vol2(MSG_DISAMERD);
 				break;
 			case CHANGE_PW:
-				display_message_vol2(MSG_CHANGING_PW);
+				display_message_vol2(MSG_CHANGE_PW);
 				break;
 		}
 		_delay_ms(50);
@@ -221,12 +204,13 @@ void change_pw() {
 void log_in() {
 	reset_logged_in_step = 0;
 	reset_input();
-	g_state = LOGGED_IN;
+	turn_off_pwm_timer();
+	g_state = DISAMERD;
 }
 
 void log_out() {
 	reset_input();
-	g_state = LOGGED_OUT;
+	g_state = ARMED;
 }
 
 void take_user_input() {
@@ -237,22 +221,14 @@ void take_user_input() {
 	if (3 == keypad_input_index && g_state == CHANGE_PW) {
 		// User is logged in and wants to change password
 		change_pw();
-	} else if (3 == keypad_input_index && g_state == LOGGED_OUT) {
+	} else if (3 == keypad_input_index && g_state == ARMED) {
 		// User is logged out and inputted password
 		compare_password();
-	} else if (g_state == LOGGED_IN) {
+	} else if (g_state == DISAMERD) {
 		// User logged in, 3 actions
-		if (0 == strcmp("A", keypad_input[0])) {
+		if (0 == strcmp("B", keypad_input[0])) {
 			// Action change pw
 			g_state == CHANGE_PW;
-			reset_input();
-		} else if (0 == strcmp("B", keypad_input[0])) {
-			// Action turn on alarm
-			alarm_toggle = true;
-			reset_input();
-		} else if (0 == strcmp("C", keypad_input[0])) {
-			// Action turn off alarm
-			alarm_toggle = false;
 			reset_input();
 		}
 	}
@@ -262,22 +238,17 @@ void take_user_input() {
 void display_message_vol2(int msg_number) {
 	lcd_clrscr();
 	switch (msg_number) {
-		case MSG_ALARM_ON:
+		case MSG_ARMED:
 			lcd_puts("Alarm on.");
 			break;
-		case MSG_ALARM_OFF:
+		case MSG_DISAMERD:
 			lcd_puts("Alarm off.");
 			break;
-		case MSG_CHANGING_PW:
+		case MSG_CHANGE_PW:
 			lcd_puts("Changing pw.");
 			break;
 		case MSG_ALARM_BUZZING:
 			lcd_puts("Alarm buzzing.");
-			break;
-		case MSG_LOGGED_IN:
-			lcd_puts("Choose action.");
-			lcd_gotoxy(0,1);
-			lcd_puts("A. B. C.");
 			break;
 		default:
 			lcd_puts("Unknown msg.");
@@ -420,9 +391,10 @@ void compare_password()
 	char* valid_pw = EEPROM_read();
 	if (0 == strcmp(valid_pw, keypad_input)) {
 		log_in();
-		turn_off_pwm_counter();
 	} else {
 		// Invalid pw
+		g_state = ALARM_BUZZING;
+		turn_on_pwm_timer();
 	}
 }
 
