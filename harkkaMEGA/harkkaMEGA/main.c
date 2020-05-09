@@ -262,6 +262,10 @@ void display_message_vol2(int msg_number)
 			lcd_puts("Alarm armed");
 			lcd_gotoxy(0, 1);
 			lcd_puts("User input: ****");
+		} else if (keypad_input_index == 0) {
+			lcd_puts("Alarm armed");
+			lcd_gotoxy(0, 1);
+			lcd_puts("User input:");
 		}
 		break;
 	case MSG_DISAMERD:
@@ -284,6 +288,10 @@ void display_message_vol2(int msg_number)
 			lcd_puts("Changing pw");
 			lcd_gotoxy(0, 1);
 			lcd_puts("New pw: ****");
+		} else if (keypad_input_index == 0) {
+			lcd_puts("Changing pw");
+			lcd_gotoxy(0, 1);
+			lcd_puts("New pw:");
 		}
 		break;
 	case MSG_ALARM_BUZZING:
@@ -303,6 +311,10 @@ void display_message_vol2(int msg_number)
 			lcd_puts("Motion detected");
 			lcd_gotoxy(0, 1);
 			lcd_puts("User input: ****");
+		} else if (keypad_input_index == 0) {
+			lcd_puts("Motion detected");
+			lcd_gotoxy(0, 1);
+			lcd_puts("User input:");
 		}
 		break;
 	default:
