@@ -11,6 +11,10 @@
 #define DISAMERD 2
 #define CHANGE_PW 3
 
+// Defined for SPI communications
+#define MOTION_DETECTED 1
+#define NO_MOTION 0
+
 // Display message macros
 #define MSG_ALARM_BUZZING 0
 #define MSG_ARMED 1
@@ -92,6 +96,7 @@ uint16_t input_timeout_step = 0;
 uint16_t reset_logged_in_step = 0;
 char keypad_input[5];
 int8_t keypad_input_index = 0;
+int revived = NO_MOTION;
 
 int counter = 0;
 uint16_t memory_address_max = 32; //for EEPROM, NOTE: not actual max, just there is no need for more
@@ -99,7 +104,7 @@ uint16_t memory_address_max = 32; //for EEPROM, NOTE: not actual max, just there
 /* Function declarations */
 void display_message_vol2(int msg_number);
 void SPI_init();
-char *SPI_communicate();
+int SPI_communicate();
 void EEPROM_write(char write_data[32]);
 char *EEPROM_read();
 /* Counter for PWM buzzer. */
@@ -163,13 +168,13 @@ int main(void)
 		case ARMED:
 			display_message_vol2(MSG_ARMED);
 			//Checks if uno has detected movement. There are two responses 1."detected motion\n" 2."no motion\n"
-			char *recived = SPI_communicate();
-			if (0 == strcmp("detected motion\n", recived))
+			revived = SPI_communicate();
+			if (revived == MOTION_DETECTED)
 			{
 				g_state = ALARM_BUZZING;
 				turn_on_pwm_timer();
+				
 			}
-			free(recived);
 			break;
 		case DISAMERD:
 			display_message_vol2(MSG_DISAMERD);
@@ -289,10 +294,11 @@ void SPI_init()
 }
 
 /* SPI communication master to slave */
-char *SPI_communicate()
+int SPI_communicate()
 {
-	char spi_send_data[20] = "master to slave\n";
-	char *spi_receive_data = malloc(20);
+	int spi_send_data[1];
+	int spi_receive_data[1];
+	spi_send_data[0] = 1;
 	/* send byte to slave and receive a byte from slave */
 	PORTB &= ~(1 << PB0); // SS LOW
 	for (int8_t spi_data_index = 0; spi_data_index < sizeof(spi_send_data); spi_data_index++)
@@ -312,9 +318,9 @@ char *SPI_communicate()
 	PORTB |= (1 << PB0); // SS HIGH
 
 	//Debugging sending received message to UART
-	printf(spi_receive_data);
-
-	return spi_receive_data;
+	printf("%d\n",spi_receive_data[0]);	
+	
+	return spi_receive_data[0];
 }
 
 void EEPROM_write(char write_data[32])
