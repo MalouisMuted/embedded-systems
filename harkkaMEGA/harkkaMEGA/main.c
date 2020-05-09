@@ -20,6 +20,9 @@
 #define MSG_ARMED 1
 #define MSG_DISAMERD 2
 #define MSG_CHANGE_PW 3
+#define MSG_PW_CORRECT 4
+#define MSG_PW_INCORRECT 5
+#define MSG_PW_TIMEOUT 6
 
 // Timeout macros
 #define INPUT_TIMEOUT_STEPS 100
@@ -276,6 +279,15 @@ void display_message_vol2(int msg_number)
 	lcd_clrscr();
 	switch (msg_number)
 	{
+	case MSG_PW_CORRECT:
+		lcd_puts("Pw correct");
+		break;
+	case MSG_PW_INCORRECT:
+		lcd_puts("Pw incorrect");
+		break;
+	case MSG_PW_TIMEOUT:
+		lcd_puts("Pw timed out");
+		break;
 	case MSG_ARMED:
 		if (keypad_input_index == 1) {
 			lcd_puts("Alarm armed");
@@ -449,12 +461,15 @@ bool compare_password()
 {
 	if (0 == strcmp(password, keypad_input))
 	{
-		printf("Salasana on oikein\n");
+		display_message_vol2(MSG_PW_CORRECT);
+		_delay_ms(1000);
 		return true;
 	}
 	else
 	{
 		// Invalid pw
+		display_message_vol2(MSG_PW_INCORRECT);
+		_delay_ms(1000);
 		g_state = ALARM_BUZZING;
 		turn_on_pwm_timer();
 		return false;
