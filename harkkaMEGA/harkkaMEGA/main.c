@@ -200,6 +200,7 @@ void change_pw()
 {
 	//EEPROM_write(&keypad_input);
 	strcpy(password, keypad_input);
+	g_state = DISAMERD;
 }
 
 void log_in()
@@ -212,14 +213,10 @@ void log_in()
 
 void take_user_input()
 {
-	keypad_input[keypad_input_index] = KEYPAD_GetKey();
-	KEYPAD_WaitForKeyRelease();
 	input_timeout_step = 0;
-	keypad_input_index++;
 	
 	if (0 == strcmp((char*)&key_input[0],"*"))
 	{
-		keypad_input_index--;
 		if (keypad_input_index>0)
 		{
 			keypad_input_index--;
@@ -227,7 +224,7 @@ void take_user_input()
 	}
 	else if (0 == strcmp((char*)&key_input[0],"A"))
 	{
-		keypad_input_index--;
+
 	}
 	else if (0 == strcmp((char*)&key_input[0],"B"))
 	{
@@ -237,18 +234,14 @@ void take_user_input()
 			g_state = CHANGE_PW;
 			reset_input();
 		}
-		else
-		{
-			keypad_input_index--;
-		}
 	}
 	else if (0 == strcmp((char*)&key_input[0],"C"))
 	{
-		keypad_input_index--;
+
 	}
 	else if (0 == strcmp((char*)&key_input[0],"D"))
 	{
-		keypad_input_index--;
+
 	}
 	else if (0 == strcmp((char*)&key_input[0],"#"))
 	{
@@ -295,21 +288,15 @@ void take_user_input()
 			}
 		}
 	}
-
-	else if (4 == keypad_input_index && (g_state == ARMED || g_state == ALARM_BUZZING))
+	else
 	{
-		// User is logged out and inputted password
-		if (true == compare_password()) {
-			log_in();
+		keypad_input[keypad_input_index] = KEYPAD_GetKey();
+		KEYPAD_WaitForKeyRelease();
+		if (keypad_input_index<4)
+		{
+			keypad_input_index++;
 		}
-	}
-	else if (4 == keypad_input_index && g_state == DISAMERD)
-	{
-		// User is logged in and wants to log out
-		if (true == compare_password()) {
-			g_state = ARMED;
-			reset_input();
-		}
+		
 	}
 }
 
