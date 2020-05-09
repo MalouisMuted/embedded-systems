@@ -96,6 +96,7 @@ uint16_t input_timeout_step = 0;
 uint16_t reset_logged_in_step = 0;
 char keypad_input[5];
 char key_input[2];
+char password[5] = "1234";
 int8_t keypad_input_index = 0;
 int revived = NO_MOTION;
 
@@ -133,7 +134,7 @@ int main(void)
 
 	// INIT of UART
 	memset(keypad_input, " ", 4);
-	EEPROM_write("1234");
+	//EEPROM_write("1234");
 	USART_init(MYUBRR);
 	g_state = ARMED;
 	stdout = &uart_output;
@@ -397,9 +398,10 @@ void EEPROM_read(char *memory_data)
 void compare_password()
 {
 	char valid_pw = malloc(32);
-	EEPROM_read(valid_pw);
-	if (0 == strcmp(valid_pw, keypad_input))
+	//EEPROM_read(valid_pw);
+	if (0 == strcmp(password, keypad_input))
 	{
+		printf("Salasana on oikein\n");
 		log_in();
 	}
 	else
@@ -408,7 +410,6 @@ void compare_password()
 		g_state = ALARM_BUZZING;
 		turn_on_pwm_timer();
 	}
-	free(valid_pw);
 }
 
 void init_pwm_timer()
