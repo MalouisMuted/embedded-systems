@@ -160,6 +160,8 @@ int main(void)
 		if (input_timeout_step > INPUT_TIMEOUT_STEPS)
 		{
 			reset_input();
+			display_message_vol2(MSG_PW_TIMEOUT);
+			_delay_ms(1000);
 		}
 
 		switch (g_state)
