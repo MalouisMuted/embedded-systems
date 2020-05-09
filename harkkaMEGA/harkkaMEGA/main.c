@@ -85,15 +85,6 @@ FILE uart_output = FDEV_SETUP_STREAM(USART_Transmit, NULL, _FDEV_SETUP_WRITE);
 FILE uart_input = FDEV_SETUP_STREAM(NULL, USART_Receive, _FDEV_SETUP_READ);
 // ----------------------------------
 
-/* LCD messages. */
-const char message1_connection_established[20] = "SPI OK";
-const char message2_movement_detected[20] = "Movement found";
-const char message3_give_password[20] = "Type password";
-const char message4_1_password_correct[20] = "Password given,";
-const char message4_2_password_correct[20] = "alarm reset";
-const char message5_1_password_time_out[20] = "Password time-";
-const char message5_2_password_time_out[20] = "out error";
-
 int8_t g_state;
 bool pwm_timer_on = false;
 bool time_out_timer_on = false;
@@ -106,7 +97,6 @@ int counter = 0;
 uint16_t memory_address_max = 32; //for EEPROM, NOTE: not actual max, just there is no need for more
 
 /* Function declarations */
-void display_message(int message_number, int password_length);
 void display_message_vol2(int msg_number);
 void SPI_init();
 char *SPI_communicate();
@@ -189,7 +179,6 @@ int main(void)
 			break;
 		}
 		_delay_ms(50);
-		display_message(0, 0);
 	}
 }
 
@@ -254,76 +243,37 @@ void display_message_vol2(int msg_number)
 	switch (msg_number)
 	{
 	case MSG_ARMED:
-		lcd_puts("Alarm on.");
+		lcd_puts("Alarm armed");
 		break;
 	case MSG_DISAMERD:
-		lcd_puts("Alarm off.");
+		lcd_puts("Alarm disarmed");
 		break;
 	case MSG_CHANGE_PW:
-		lcd_puts("Changing pw.");
-		break;
-	case MSG_ALARM_BUZZING:
-		lcd_puts("Alarm buzzing.");
-		break;
-	default:
-		lcd_puts("Unknown msg.");
-	}
-}
-
-/* Displays the string matching the message number. Also displays password as '*' depending on password_length. */
-void display_message(int message_number, int password_length)
-{
-	/* Clearing the LCD before displaying new message. */
-	lcd_clrscr();
-	switch (message_number)
-	{
-	case 0:
-		lcd_puts("test");
-		break;
-	case 1:
-		lcd_puts(message1_connection_established);
-		break;
-	case 2:
-		lcd_puts(message2_movement_detected);
-		break;
-	case 3:
-		lcd_puts(message3_give_password);
-		lcd_gotoxy(0, 1);
-		switch (password_length)
-		{
-		case 0:
-			lcd_puts("Password: ");
-			break;
-		case 1:
-			lcd_puts("Password: *");
-			break;
-		case 2:
-			lcd_puts("Password: **");
-			break;
-		case 3:
-			lcd_puts("Password: ***");
-			break;
-		case 4:
-			lcd_puts("Password: ****");
-			break;
-		default:
-			lcd_puts("Password: Error");
+		if (keypad_input_index == 0) {
+			lcd_puts("Changing pw");
+			lcd_gotoxy(0, 1);
+			lcd_puts("New pw: *");
+		} else if (keypad_input_index == 1) {
+			lcd_puts("Changing pw");
+			lcd_gotoxy(0, 1);
+			lcd_puts("New pw: **");
+		} else if (keypad_input_index == 2) {
+			lcd_puts("Changing pw");
+			lcd_gotoxy(0, 1);
+			lcd_puts("New pw: ***");
+		} else if (keypad_input_index == 3) {
+			lcd_puts("Changing pw");
+			lcd_gotoxy(0, 1);
+			lcd_puts("New pw: ****");
 		}
 		break;
-	case 4:
-		lcd_puts(message4_1_password_correct);
+	case MSG_ALARM_BUZZING:
+		lcd_puts("Alarm buzzing");
 		lcd_gotoxy(0, 1);
-		lcd_puts(message4_2_password_correct);
-		break;
-	case 5:
-		lcd_puts(message5_1_password_time_out);
-		lcd_gotoxy(0, 1);
-		lcd_puts(message5_2_password_time_out);
+		lcd_puts("Motion detected");
 		break;
 	default:
-		lcd_puts("Unknown value");
-		lcd_gotoxy(0, 1);
-		lcd_puts("to LCD function");
+		lcd_puts("Unknown msg");
 	}
 }
 
