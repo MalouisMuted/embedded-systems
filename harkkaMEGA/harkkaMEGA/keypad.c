@@ -196,10 +196,10 @@ uint8_t KEYPAD_GetKey()
 {
 	uint8_t var_keyPress_u8;
 
-	KEYPAD_WaitForKeyRelease();    // Wait for the previous key release
+	//KEYPAD_WaitForKeyRelease();    // Wait for the previous key release
 	DELAY_ms(1);
 
-	KEYPAD_WaitForKeyPress();      // Wait for the new key press
+	//KEYPAD_WaitForKeyPress();      // Wait for the new key press
 	var_keyPress_u8 = keypad_ScanKey();        // Scan for the key pressed.
 
 	switch(var_keyPress_u8)                       // Decode the key
