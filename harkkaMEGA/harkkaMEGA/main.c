@@ -276,7 +276,27 @@ void display_message_vol2(int msg_number)
 		}
 		break;
 	case MSG_DISAMERD:
-		lcd_puts("Alarm disarmed");
+		if (keypad_input_index == 1) {
+			lcd_puts("Alarm disarmed");
+			lcd_gotoxy(0, 1);
+			lcd_puts("User input: *");
+		} else if (keypad_input_index == 2) {
+			lcd_puts("Alarm disarmed");
+			lcd_gotoxy(0, 1);
+			lcd_puts("User input: **");
+		} else if (keypad_input_index == 3) {
+			lcd_puts("Alarm disarmed");
+			lcd_gotoxy(0, 1);
+			lcd_puts("User input: ***");
+		} else if (keypad_input_index == 4) {
+			lcd_puts("Alarm disarmed");
+			lcd_gotoxy(0, 1);
+			lcd_puts("User input: ****");
+		} else if (keypad_input_index == 0) {
+			lcd_puts("Alarm disarmed");
+			lcd_gotoxy(0, 1);
+			lcd_puts("User input:");
+		}
 		break;
 	case MSG_CHANGE_PW:
 		if (keypad_input_index == 1) {
