@@ -293,6 +293,7 @@ void take_user_input()
 			if (true == compare_password())
 			{
 				log_in();
+				wrong_pass = false;
 			}
 		}
 		else if (g_state == DISAMERD)
