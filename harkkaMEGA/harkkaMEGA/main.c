@@ -44,65 +44,18 @@
 #include "lcd.h"	// LCD Library by Peter Fleury.
 #include "keypad.h" // Keypad Library by https://www.exploreembedded.com/wiki/AVR_C_Library
 
-//UART for debugging
-#include <avr/interrupt.h>
-#include <util/delay.h>
-#include <util/setbaud.h>
-#include <stdio.h>
 
-static void USART_init(uint16_t ubrr)
-{
-	/* Set baud rate in the USART Baud Rate Registers (UBRR) */
-	UBRR0H = (unsigned char)(ubrr >> 8);
-	UBRR0L = (unsigned char)ubrr;
-
-	/* Enable receiver and transmitter on RX0 and TX0 */
-	UCSR0B |= (1 << RXEN0) | (1 << TXEN0);
-
-	/* Set frame format: 8 bit data, 2 stop bit */
-	UCSR0C |= (1 << USBS0) | (3 << UCSZ00);
-}
-
-static void USART_Transmit(unsigned char data, FILE *stream)
-{
-	/* Wait until the transmit buffer is empty*/
-	while (!(UCSR0A & (1 << UDRE0)))
-	{
-		;
-	}
-
-	/* Puts the data into a buffer, then sends/transmits the data */
-	UDR0 = data;
-}
-
-static char USART_Receive(FILE *stream)
-{
-	/* Wait until the transmit buffer is empty*/
-	while (!(UCSR0A & (1 << UDRE0)))
-	{
-		;
-	}
-
-	/* Get the received data from the buffer */
-	return UDR0;
-}
-// Setup the stream functions for UART
-FILE uart_output = FDEV_SETUP_STREAM(USART_Transmit, NULL, _FDEV_SETUP_WRITE);
-FILE uart_input = FDEV_SETUP_STREAM(NULL, USART_Receive, _FDEV_SETUP_READ);
-// ----------------------------------
-
-int8_t g_state;
-bool pwm_timer_on = false;
-bool wrong_pass = false;
-uint16_t input_timeout_step = 0;
-char keypad_input[5];
-char key_input[2];
-char password[5] = "1234";
-int8_t keypad_input_index = 0;
-int revived = NO_MOTION;
-
-int counter = 0;
-uint16_t memory_address_max = 32; //for EEPROM, NOTE: not actual max, just there is no need for more
+int8_t		g_state;
+bool		pwm_timer_on = false;
+bool		wrong_pass = false;
+uint16_t	input_timeout_step = 0;
+char		keypad_input[5];
+char		key_input[2];
+char		password[5] = "1234";
+int8_t		keypad_input_index = 0;
+int			revived = NO_MOTION;
+int			counter = 0;
+uint16_t	memory_address_max = 32; //for EEPROM, NOTE: not actual max, just there is no need for more
 
 /* Function declarations */
 void display_message_vol2(int msg_number);
@@ -111,8 +64,6 @@ int SPI_communicate();
 void LED_init();
 void LED_on();
 void LED_off();
-//void EEPROM_write(char *write_data);
-//void EEPROM_read(char *memory_data);
 /* Counter for PWM buzzer. */
 void init_pwm_timer();
 void turn_off_pwm_timer();
@@ -136,14 +87,8 @@ int main(void)
 
 	/* Init timer for PWM. */
 	init_pwm_timer();
-
-	// INIT of UART
 	memset(keypad_input, ' ', 4);
-	USART_init(MYUBRR);
 	g_state = ARMED;
-	stdout = &uart_output;
-	stdin = &uart_input;
-	//----------------
 	LED_on();
 
 	while (1)
@@ -154,10 +99,7 @@ int main(void)
 
 		if (!(0 == strcmp((char *)&key_input[0], "z")))
 		{
-			printf((char *)&key_input[0]);
-			printf(" nyt painettu ja indexi on %d\n", keypad_input_index);
-
-			take_user_input();
+						take_user_input();
 		}
 
 		if (input_timeout_step > INPUT_TIMEOUT_STEPS)
@@ -317,7 +259,7 @@ void take_user_input()
 	}
 }
 
-/* New funktion for displaying messages and taking one argument*/
+/* New function for displaying messages and taking one argument*/
 void display_message_vol2(int msg_number)
 {
 	lcd_clrscr();
@@ -537,9 +479,6 @@ int SPI_communicate()
 	/* End communication */
 	PORTB |= (1 << PB0); // SS HIGH
 
-	//Debugging sending received message to UART
-	//printf("%d\n",spi_receive_data[0]);
-
 	return spi_receive_data[0];
 }
 
@@ -559,37 +498,6 @@ void LED_off()
 {
 	//Set pin 37 Low
 	PORTC &= ~(1 << PC0);
-}
-
-void EEPROM_write(char *write_data)
-{
-	for (uint16_t address_index = 0; address_index < sizeof(write_data); address_index++)
-	{
-		while (EECR & (1 << 1))
-		{
-			/* wait for the previous write operation to end */
-		}
-
-		EEAR = address_index;
-		EEDR = write_data[address_index];
-		EECR |= (1 << 2); // master programming enable
-		EECR |= (1 << 1); // EEPROM programming enable
-	}
-}
-
-void EEPROM_read(char *memory_data)
-{
-	for (uint16_t address_index = 0; address_index < memory_address_max; address_index++)
-	{
-		while (EECR & (1 << 1))
-		{
-			/* wait for the previous write operation to end */
-		}
-
-		EEAR = address_index;
-		EECR |= 0x01; // enable EEPROM read
-		memory_data[address_index] = EEDR;
-	}
 }
 
 bool compare_password()
