@@ -107,6 +107,9 @@ uint16_t memory_address_max = 32; //for EEPROM, NOTE: not actual max, just there
 void display_message_vol2(int msg_number);
 void SPI_init();
 int SPI_communicate();
+void LED_init();
+void LED_on();
+void LED_off();
 //void EEPROM_write(char *write_data);
 //void EEPROM_read(char *memory_data);
 /* Counter for PWM buzzer. */
@@ -128,6 +131,7 @@ int main(void)
 	lcd_init(LCD_DISP_ON);
 	KEYPAD_Init();
 	SPI_init();
+	LED_init();
 
 	/* Init timer for PWM. */
 	init_pwm_timer();
@@ -139,6 +143,8 @@ int main(void)
 	stdout = &uart_output;
 	stdin = &uart_input;
 	//----------------
+	
+	LED_on();
 
 	while (1)
 	{
@@ -206,6 +212,7 @@ void log_in()
 {
 	reset_input();
 	turn_off_pwm_timer();
+	LED_off();
 	g_state = DISAMERD;
 }
 
@@ -268,6 +275,7 @@ void take_user_input()
 				g_state == ALARM_BUZZING;
 				turn_on_pwm_timer();
 				reset_input();
+				
 			}
 		}
 		else if (g_state == ALARM_BUZZING)
@@ -282,6 +290,7 @@ void take_user_input()
 			if (true == compare_password())
 			{
 				g_state == ARMED;
+				LED_on();
 				reset_input();
 			}
 		}
@@ -451,6 +460,24 @@ int SPI_communicate()
 	return spi_receive_data[0];
 }
 
+void LED_init()
+{
+	//Set pin 37 as output
+	DDRC |= (1 << PC0);
+}
+
+void LED_on()
+{
+	//Set pin 37 High
+	PORTC |= (1 << PC0);
+}
+
+void LED_off()
+{
+	//Set pin 37 Low
+	PORTC &= ~(1 << PC0);
+}
+
 void EEPROM_write(char *write_data)
 {
 	for (uint16_t address_index = 0; address_index < sizeof(write_data); address_index++)
@@ -494,8 +521,6 @@ bool compare_password()
 	{
 		display_message_vol2(MSG_PW_INCORRECT);
 		_delay_ms(1000);
-		g_state = ALARM_BUZZING;
-		turn_on_pwm_timer();
 		return false;
 	}
 }
