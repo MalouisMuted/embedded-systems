@@ -137,13 +137,12 @@ int main(void)
 	init_pwm_timer();
 
 	// INIT of UART
-	memset(keypad_input, " ", 4);
+	memset(keypad_input,' ', 4);
 	USART_init(MYUBRR);
 	g_state = ARMED;
 	stdout = &uart_output;
 	stdin = &uart_input;
 	//----------------
-	
 	LED_on();
 
 	while (1)
@@ -163,9 +162,16 @@ int main(void)
 
 		if (input_timeout_step > INPUT_TIMEOUT_STEPS)
 		{
-			reset_input();
-			display_message_vol2(MSG_PW_TIMEOUT);
-			_delay_ms(1000);
+			if (keypad_input_index > 0)
+			{
+				reset_input();
+				display_message_vol2(MSG_PW_TIMEOUT);
+				_delay_ms(1000);
+			} 
+			else
+			{
+				reset_input();
+			}
 		}
 
 		switch (g_state)
@@ -205,6 +211,9 @@ void reset_input()
 void change_pw()
 {
 	strcpy(password, keypad_input);
+	lcd_clrscr();
+	lcd_puts("Pw changed");
+	_delay_ms(500);
 	g_state = DISAMERD;
 }
 
@@ -223,6 +232,7 @@ void take_user_input()
 	
 	if (0 == strcmp((char*)&key_input[0],"*"))
 	{
+		KEYPAD_WaitForKeyRelease();
 		if (keypad_input_index>0)
 		{
 			keypad_input_index--;
@@ -230,10 +240,11 @@ void take_user_input()
 	}
 	else if (0 == strcmp((char*)&key_input[0],"A"))
 	{
-
+		KEYPAD_WaitForKeyRelease();
 	}
 	else if (0 == strcmp((char*)&key_input[0],"B"))
 	{
+		KEYPAD_WaitForKeyRelease();
 		if (g_state == DISAMERD)
 		{
 			g_state = CHANGE_PW;
@@ -242,14 +253,15 @@ void take_user_input()
 	}
 	else if (0 == strcmp((char*)&key_input[0],"C"))
 	{
-
+		KEYPAD_WaitForKeyRelease();
 	}
 	else if (0 == strcmp((char*)&key_input[0],"D"))
 	{
-
+		KEYPAD_WaitForKeyRelease();
 	}
 	else if (0 == strcmp((char*)&key_input[0],"#"))
 	{
+		KEYPAD_WaitForKeyRelease();
 		if (g_state == CHANGE_PW)
 		{
 			if (4 == keypad_input_index)
@@ -272,10 +284,9 @@ void take_user_input()
 			} 
 			else 
 			{
-				g_state == ALARM_BUZZING;
+				g_state = ALARM_BUZZING;
 				turn_on_pwm_timer();
 				reset_input();
-				
 			}
 		}
 		else if (g_state == ALARM_BUZZING)
@@ -289,7 +300,7 @@ void take_user_input()
 		{
 			if (true == compare_password())
 			{
-				g_state == ARMED;
+				g_state = ARMED;
 				LED_on();
 				reset_input();
 			}
