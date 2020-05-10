@@ -53,11 +53,11 @@ int revived = NO_MOTION;
 int counter = 0;
 
 void display_message_vol2(int msg_number);
-void SPI_init();
-int SPI_communicate();
-void LED_init();
-void LED_on();
-void LED_off();
+void spi_init();
+int spi_communicate();
+void led_init();
+void led_on();
+void led_off();
 void init_pwm_timer();
 void turn_off_pwm_timer();
 void turn_on_pwm_timer();
@@ -81,7 +81,7 @@ int main(void)
 	init_pwm_timer();
 	memset(keypad_input, ' ', 4);
 	g_state = ARMED;
-	LED_on();
+	led_on();
 
 	while (1)
 	{
