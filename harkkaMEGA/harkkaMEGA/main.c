@@ -93,6 +93,7 @@ FILE uart_input = FDEV_SETUP_STREAM(NULL, USART_Receive, _FDEV_SETUP_READ);
 
 int8_t g_state;
 bool pwm_timer_on = false;
+bool wrong_pass = false;
 uint16_t input_timeout_step = 0;
 char keypad_input[5];
 char key_input[2];
@@ -137,7 +138,7 @@ int main(void)
 	init_pwm_timer();
 
 	// INIT of UART
-	memset(keypad_input,' ', 4);
+	memset(keypad_input, ' ', 4);
 	USART_init(MYUBRR);
 	g_state = ARMED;
 	stdout = &uart_output;
@@ -148,15 +149,14 @@ int main(void)
 	while (1)
 	{
 		input_timeout_step++;
-		
+
 		key_input[0] = KEYPAD_GetKey();
-		
-				
-		if (!(0 == strcmp((char*)&key_input[0],"z")))
+
+		if (!(0 == strcmp((char *)&key_input[0], "z")))
 		{
-			printf((char*)&key_input[0]);
-			printf(" nyt painettu ja indexi on %d\n",keypad_input_index);
-			
+			printf((char *)&key_input[0]);
+			printf(" nyt painettu ja indexi on %d\n", keypad_input_index);
+
 			take_user_input();
 		}
 
@@ -167,7 +167,7 @@ int main(void)
 				reset_input();
 				display_message_vol2(MSG_PW_TIMEOUT);
 				_delay_ms(1000);
-			} 
+			}
 			else
 			{
 				reset_input();
@@ -187,7 +187,6 @@ int main(void)
 			{
 				g_state = ALARM_BUZZING;
 				turn_on_pwm_timer();
-				
 			}
 			break;
 		case DISAMERD:
@@ -225,24 +224,23 @@ void log_in()
 	g_state = DISAMERD;
 }
 
-
 void take_user_input()
 {
 	input_timeout_step = 0;
-	
-	if (0 == strcmp((char*)&key_input[0],"*"))
+
+	if (0 == strcmp((char *)&key_input[0], "*"))
 	{
 		KEYPAD_WaitForKeyRelease();
-		if (keypad_input_index>0)
+		if (keypad_input_index > 0)
 		{
 			keypad_input_index--;
 		}
 	}
-	else if (0 == strcmp((char*)&key_input[0],"A"))
+	else if (0 == strcmp((char *)&key_input[0], "A"))
 	{
 		KEYPAD_WaitForKeyRelease();
 	}
-	else if (0 == strcmp((char*)&key_input[0],"B"))
+	else if (0 == strcmp((char *)&key_input[0], "B"))
 	{
 		KEYPAD_WaitForKeyRelease();
 		if (g_state == DISAMERD)
@@ -251,15 +249,15 @@ void take_user_input()
 			reset_input();
 		}
 	}
-	else if (0 == strcmp((char*)&key_input[0],"C"))
+	else if (0 == strcmp((char *)&key_input[0], "C"))
 	{
 		KEYPAD_WaitForKeyRelease();
 	}
-	else if (0 == strcmp((char*)&key_input[0],"D"))
+	else if (0 == strcmp((char *)&key_input[0], "D"))
 	{
 		KEYPAD_WaitForKeyRelease();
 	}
-	else if (0 == strcmp((char*)&key_input[0],"#"))
+	else if (0 == strcmp((char *)&key_input[0], "#"))
 	{
 		KEYPAD_WaitForKeyRelease();
 		if (g_state == CHANGE_PW)
@@ -274,17 +272,18 @@ void take_user_input()
 			{
 				reset_input();
 			}
-			
 		}
 		else if (g_state == ARMED)
 		{
-			if (true == compare_password()) 
+			if (true == compare_password())
 			{
 				log_in();
-			} 
-			else 
+				wrong_pass = false;
+			}
+			else
 			{
 				g_state = ALARM_BUZZING;
+				wrong_pass = true;
 				turn_on_pwm_timer();
 				reset_input();
 			}
@@ -310,11 +309,10 @@ void take_user_input()
 	{
 		keypad_input[keypad_input_index] = KEYPAD_GetKey();
 		KEYPAD_WaitForKeyRelease();
-		if (keypad_input_index<4)
+		if (keypad_input_index < 4)
 		{
 			keypad_input_index++;
 		}
-		
 	}
 }
 
@@ -334,96 +332,169 @@ void display_message_vol2(int msg_number)
 		lcd_puts("Pw timed out");
 		break;
 	case MSG_ARMED:
-		if (keypad_input_index == 1) {
+		if (keypad_input_index == 1)
+		{
 			lcd_puts("Alarm armed");
 			lcd_gotoxy(0, 1);
 			lcd_puts("User input: *");
-		} else if (keypad_input_index == 2) {
+		}
+		else if (keypad_input_index == 2)
+		{
 			lcd_puts("Alarm armed");
 			lcd_gotoxy(0, 1);
 			lcd_puts("User input: **");
-		} else if (keypad_input_index == 3) {
+		}
+		else if (keypad_input_index == 3)
+		{
 			lcd_puts("Alarm armed");
 			lcd_gotoxy(0, 1);
 			lcd_puts("User input: ***");
-		} else if (keypad_input_index == 4) {
+		}
+		else if (keypad_input_index == 4)
+		{
 			lcd_puts("Alarm armed");
 			lcd_gotoxy(0, 1);
 			lcd_puts("User input: ****");
-		} else if (keypad_input_index == 0) {
+		}
+		else if (keypad_input_index == 0)
+		{
 			lcd_puts("Alarm armed");
 			lcd_gotoxy(0, 1);
 			lcd_puts("User input:");
 		}
 		break;
 	case MSG_DISAMERD:
-		if (keypad_input_index == 1) {
+		if (keypad_input_index == 1)
+		{
 			lcd_puts("Alarm disarmed");
 			lcd_gotoxy(0, 1);
 			lcd_puts("User input: *");
-		} else if (keypad_input_index == 2) {
+		}
+		else if (keypad_input_index == 2)
+		{
 			lcd_puts("Alarm disarmed");
 			lcd_gotoxy(0, 1);
 			lcd_puts("User input: **");
-		} else if (keypad_input_index == 3) {
+		}
+		else if (keypad_input_index == 3)
+		{
 			lcd_puts("Alarm disarmed");
 			lcd_gotoxy(0, 1);
 			lcd_puts("User input: ***");
-		} else if (keypad_input_index == 4) {
+		}
+		else if (keypad_input_index == 4)
+		{
 			lcd_puts("Alarm disarmed");
 			lcd_gotoxy(0, 1);
 			lcd_puts("User input: ****");
-		} else if (keypad_input_index == 0) {
+		}
+		else if (keypad_input_index == 0)
+		{
 			lcd_puts("Alarm disarmed");
 			lcd_gotoxy(0, 1);
 			lcd_puts("User input:");
 		}
 		break;
 	case MSG_CHANGE_PW:
-		if (keypad_input_index == 1) {
+		if (keypad_input_index == 1)
+		{
 			lcd_puts("Changing pw");
 			lcd_gotoxy(0, 1);
 			lcd_puts("New pw: *");
-		} else if (keypad_input_index == 2) {
+		}
+		else if (keypad_input_index == 2)
+		{
 			lcd_puts("Changing pw");
 			lcd_gotoxy(0, 1);
 			lcd_puts("New pw: **");
-		} else if (keypad_input_index == 3) {
+		}
+		else if (keypad_input_index == 3)
+		{
 			lcd_puts("Changing pw");
 			lcd_gotoxy(0, 1);
 			lcd_puts("New pw: ***");
-		} else if (keypad_input_index == 4) {
+		}
+		else if (keypad_input_index == 4)
+		{
 			lcd_puts("Changing pw");
 			lcd_gotoxy(0, 1);
 			lcd_puts("New pw: ****");
-		} else if (keypad_input_index == 0) {
+		}
+		else if (keypad_input_index == 0)
+		{
 			lcd_puts("Changing pw");
 			lcd_gotoxy(0, 1);
 			lcd_puts("New pw:");
 		}
 		break;
 	case MSG_ALARM_BUZZING:
-		if (keypad_input_index == 1) {
-			lcd_puts("Motion detected");
-			lcd_gotoxy(0, 1);
-			lcd_puts("User input: *");
-		} else if (keypad_input_index == 2) {
-			lcd_puts("Motion detected");
-			lcd_gotoxy(0, 1);
-			lcd_puts("User input: **");
-		} else if (keypad_input_index == 3) {
-			lcd_puts("Motion detected");
-			lcd_gotoxy(0, 1);
-			lcd_puts("User input: ***");
-		} else if (keypad_input_index == 4) {
-			lcd_puts("Motion detected");
-			lcd_gotoxy(0, 1);
-			lcd_puts("User input: ****");
-		} else if (keypad_input_index == 0) {
-			lcd_puts("Motion detected");
-			lcd_gotoxy(0, 1);
-			lcd_puts("User input:");
+		if (wrong_pass == true)
+		{
+			if (keypad_input_index == 1)
+			{
+				lcd_puts("Wrong pw");
+				lcd_gotoxy(0, 1);
+				lcd_puts("User input: *");
+			}
+			else if (keypad_input_index == 2)
+			{
+				lcd_puts("Wrong pw");
+				lcd_gotoxy(0, 1);
+				lcd_puts("User input: **");
+			}
+			else if (keypad_input_index == 3)
+			{
+				lcd_puts("Wrong pw");
+				lcd_gotoxy(0, 1);
+				lcd_puts("User input: ***");
+			}
+			else if (keypad_input_index == 4)
+			{
+				lcd_puts("Wrong pw");
+				lcd_gotoxy(0, 1);
+				lcd_puts("User input: ****");
+			}
+			else if (keypad_input_index == 0)
+			{
+				lcd_puts("Wrong pw");
+				lcd_gotoxy(0, 1);
+				lcd_puts("User input:");
+			}
 		}
+		else
+		{
+			if (keypad_input_index == 1)
+			{
+				lcd_puts("Motion detected");
+				lcd_gotoxy(0, 1);
+				lcd_puts("User input: *");
+			}
+			else if (keypad_input_index == 2)
+			{
+				lcd_puts("Motion detected");
+				lcd_gotoxy(0, 1);
+				lcd_puts("User input: **");
+			}
+			else if (keypad_input_index == 3)
+			{
+				lcd_puts("Motion detected");
+				lcd_gotoxy(0, 1);
+				lcd_puts("User input: ***");
+			}
+			else if (keypad_input_index == 4)
+			{
+				lcd_puts("Motion detected");
+				lcd_gotoxy(0, 1);
+				lcd_puts("User input: ****");
+			}
+			else if (keypad_input_index == 0)
+			{
+				lcd_puts("Motion detected");
+				lcd_gotoxy(0, 1);
+				lcd_puts("User input:");
+			}
+		}
+
 		break;
 	default:
 		lcd_puts("Unknown msg");
@@ -466,8 +537,8 @@ int SPI_communicate()
 	PORTB |= (1 << PB0); // SS HIGH
 
 	//Debugging sending received message to UART
-	//printf("%d\n",spi_receive_data[0]);	
-	
+	//printf("%d\n",spi_receive_data[0]);
+
 	return spi_receive_data[0];
 }
 
