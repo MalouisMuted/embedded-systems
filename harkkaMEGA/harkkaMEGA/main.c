@@ -5,17 +5,17 @@
  * Author : Elias, Aleksi, Aku
  */
 
-// State machine macros
+// State machine macros defined.
 #define ALARM_BUZZING 0
 #define ARMED 1
 #define DISAMERD 2
 #define CHANGE_PW 3
 
-// Defined for SPI communications
+// SPI communications defined.
 #define MOTION_DETECTED 1
 #define NO_MOTION 0
 
-// Display message macros
+// Display message macros defined.
 #define MSG_ALARM_BUZZING 0
 #define MSG_ARMED 1
 #define MSG_DISAMERD 2
@@ -24,33 +24,34 @@
 #define MSG_PW_INCORRECT 5
 #define MSG_PW_TIMEOUT 6
 
-// Timeout macros
+// Timeout macros defined.
 #define INPUT_TIMEOUT_STEPS 100
 
 #define F_CPU 16000000UL
 #define MaxEepromSize 4096
 
-//UART for debugging
-#define FOSC 16000000UL // Clock Speed
+// UART for debugging
+#define FOSC 16000000UL // Clock Speed for Adruino.
 #define BAUD 9600
 #define MYUBRR (FOSC / 16 / BAUD - 1)
-//--------------
 
 #include <avr/io.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <util/delay.h>
-#include "lcd.h"	// LCD Library by Peter Fleury.
-#include "keypad.h" // Keypad Library by https://www.exploreembedded.com/wiki/AVR_C_Library
+// LCD Library made by Peter Fleury.
+#include "lcd.h"
+// Keypad Library by https://www.exploreembedded.com/wiki/AVR_C_Library
+#include "keypad.h"
 
-//UART for debugging
+// UART for debugging
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include <util/setbaud.h>
 #include <stdio.h>
 
-static void USART_init(uint16_t ubrr)
+static void usart_init(uint16_t ubrr)
 {
 	/* Set baud rate in the USART Baud Rate Registers (UBRR) */
 	UBRR0H = (unsigned char)(ubrr >> 8);
@@ -63,7 +64,7 @@ static void USART_init(uint16_t ubrr)
 	UCSR0C |= (1 << USBS0) | (3 << UCSZ00);
 }
 
-static void USART_Transmit(unsigned char data, FILE *stream)
+static void usart_Transmit(unsigned char data, FILE *stream)
 {
 	/* Wait until the transmit buffer is empty*/
 	while (!(UCSR0A & (1 << UDRE0)))
@@ -75,7 +76,7 @@ static void USART_Transmit(unsigned char data, FILE *stream)
 	UDR0 = data;
 }
 
-static char USART_Receive(FILE *stream)
+static char usart_receive(FILE *stream)
 {
 	/* Wait until the transmit buffer is empty*/
 	while (!(UCSR0A & (1 << UDRE0)))
@@ -87,8 +88,8 @@ static char USART_Receive(FILE *stream)
 	return UDR0;
 }
 // Setup the stream functions for UART
-FILE uart_output = FDEV_SETUP_STREAM(USART_Transmit, NULL, _FDEV_SETUP_WRITE);
-FILE uart_input = FDEV_SETUP_STREAM(NULL, USART_Receive, _FDEV_SETUP_READ);
+FILE uart_output = FDEV_SETUP_STREAM(usart_Transmit, NULL, _FDEV_SETUP_WRITE);
+FILE uart_input = FDEV_SETUP_STREAM(NULL, usart_receive, _FDEV_SETUP_READ);
 // ----------------------------------
 
 int8_t g_state;
@@ -101,27 +102,19 @@ char password[5] = "1234";
 int8_t keypad_input_index = 0;
 int revived = NO_MOTION;
 
-int counter = 0;
-uint16_t memory_address_max = 32; //for EEPROM, NOTE: not actual max, just there is no need for more
-
-/* Function declarations */
 void display_message_vol2(int msg_number);
-void SPI_init();
-int SPI_communicate();
-void LED_init();
-void LED_on();
-void LED_off();
-//void EEPROM_write(char *write_data);
-//void EEPROM_read(char *memory_data);
-/* Counter for PWM buzzer. */
+void spi_init();
+int spi_communicate();
+void led_init();
+void led_on();
+void led_off();
 void init_pwm_timer();
 void turn_off_pwm_timer();
 void turn_on_pwm_timer();
-
 bool compare_password();
 void reset_input();
 void log_in();
-void change_pw();
+void change_password();
 void take_user_input();
 
 int main(void)
@@ -131,32 +124,30 @@ int main(void)
 	// LCD, SPI and Keypad initialization.
 	lcd_init(LCD_DISP_ON);
 	KEYPAD_Init();
-	SPI_init();
-	LED_init();
+	spi_init();
+	led_init();
 
 	/* Init timer for PWM. */
 	init_pwm_timer();
 
 	// INIT of UART
 	memset(keypad_input, ' ', 4);
-	USART_init(MYUBRR);
+	usart_init(MYUBRR);
 	g_state = ARMED;
 	stdout = &uart_output;
 	stdin = &uart_input;
-	//----------------
-	LED_on();
+
+	led_on();
 
 	while (1)
 	{
+		// This is to ensure user doesn't take too long to input stuff.
 		input_timeout_step++;
 
 		key_input[0] = KEYPAD_GetKey();
 
 		if (!(0 == strcmp((char *)&key_input[0], "z")))
 		{
-			printf((char *)&key_input[0]);
-			printf(" nyt painettu ja indexi on %d\n", keypad_input_index);
-
 			take_user_input();
 		}
 
@@ -181,8 +172,8 @@ int main(void)
 			break;
 		case ARMED:
 			display_message_vol2(MSG_ARMED);
-			//Checks if uno has detected movement. There are two responses 1."detected motion\n" 2."no motion\n"
-			revived = SPI_communicate();
+			// Checks if Uno has detected movement.
+			revived = spi_communicate();
 			if (revived == MOTION_DETECTED)
 			{
 				g_state = ALARM_BUZZING;
@@ -196,6 +187,7 @@ int main(void)
 			display_message_vol2(MSG_CHANGE_PW);
 			break;
 		}
+		// This is important variable, changes essentially the refresh rate of the main loop.
 		_delay_ms(50);
 	}
 }
@@ -207,7 +199,7 @@ void reset_input()
 	strcpy(keypad_input, "    ");
 }
 
-void change_pw()
+void change_password()
 {
 	strcpy(password, keypad_input);
 	lcd_clrscr();
@@ -220,7 +212,7 @@ void log_in()
 {
 	reset_input();
 	turn_off_pwm_timer();
-	LED_off();
+	led_off();
 	g_state = DISAMERD;
 }
 
@@ -265,7 +257,7 @@ void take_user_input()
 			if (4 == keypad_input_index)
 			{
 				// User is logged in and wants to change password
-				change_pw();
+				change_password();
 				reset_input();
 			}
 			else
@@ -301,7 +293,7 @@ void take_user_input()
 			if (true == compare_password())
 			{
 				g_state = ARMED;
-				LED_on();
+				led_on();
 				reset_input();
 			}
 		}
@@ -317,7 +309,8 @@ void take_user_input()
 	}
 }
 
-/* New funktion for displaying messages and taking one argument*/
+/* New function for displaying messages and taking one argument.
+keypad_input_index is used to figure out if user has typed anything.*/
 void display_message_vol2(int msg_number)
 {
 	lcd_clrscr();
@@ -333,31 +326,31 @@ void display_message_vol2(int msg_number)
 		lcd_puts("Pw timed out");
 		break;
 	case MSG_ARMED:
-		if (keypad_input_index == 1)
+		if (1 == keypad_input_index)
 		{
 			lcd_puts("Alarm armed");
 			lcd_gotoxy(0, 1);
 			lcd_puts("User input: *");
 		}
-		else if (keypad_input_index == 2)
+		else if (2 == keypad_input_index)
 		{
 			lcd_puts("Alarm armed");
 			lcd_gotoxy(0, 1);
 			lcd_puts("User input: **");
 		}
-		else if (keypad_input_index == 3)
+		else if (3 == keypad_input_index)
 		{
 			lcd_puts("Alarm armed");
 			lcd_gotoxy(0, 1);
 			lcd_puts("User input: ***");
 		}
-		else if (keypad_input_index == 4)
+		else if (4 == keypad_input_index)
 		{
 			lcd_puts("Alarm armed");
 			lcd_gotoxy(0, 1);
 			lcd_puts("User input: ****");
 		}
-		else if (keypad_input_index == 0)
+		else if (0 == keypad_input_index)
 		{
 			lcd_puts("Alarm armed");
 			lcd_gotoxy(0, 1);
@@ -365,31 +358,31 @@ void display_message_vol2(int msg_number)
 		}
 		break;
 	case MSG_DISAMERD:
-		if (keypad_input_index == 1)
+		if (1 == keypad_input_index)
 		{
 			lcd_puts("Alarm disarmed");
 			lcd_gotoxy(0, 1);
 			lcd_puts("User input: *");
 		}
-		else if (keypad_input_index == 2)
+		else if (2 == keypad_input_index)
 		{
 			lcd_puts("Alarm disarmed");
 			lcd_gotoxy(0, 1);
 			lcd_puts("User input: **");
 		}
-		else if (keypad_input_index == 3)
+		else if (3 == keypad_input_index)
 		{
 			lcd_puts("Alarm disarmed");
 			lcd_gotoxy(0, 1);
 			lcd_puts("User input: ***");
 		}
-		else if (keypad_input_index == 4)
+		else if (4 == keypad_input_index)
 		{
 			lcd_puts("Alarm disarmed");
 			lcd_gotoxy(0, 1);
 			lcd_puts("User input: ****");
 		}
-		else if (keypad_input_index == 0)
+		else if (0 == keypad_input_index)
 		{
 			lcd_puts("Alarm disarmed");
 			lcd_gotoxy(0, 1);
@@ -397,31 +390,31 @@ void display_message_vol2(int msg_number)
 		}
 		break;
 	case MSG_CHANGE_PW:
-		if (keypad_input_index == 1)
+		if (1 == keypad_input_index)
 		{
 			lcd_puts("Changing pw");
 			lcd_gotoxy(0, 1);
 			lcd_puts("New pw: *");
 		}
-		else if (keypad_input_index == 2)
+		else if (2 == keypad_input_index)
 		{
 			lcd_puts("Changing pw");
 			lcd_gotoxy(0, 1);
 			lcd_puts("New pw: **");
 		}
-		else if (keypad_input_index == 3)
+		else if (3 == keypad_input_index)
 		{
 			lcd_puts("Changing pw");
 			lcd_gotoxy(0, 1);
 			lcd_puts("New pw: ***");
 		}
-		else if (keypad_input_index == 4)
+		else if (4 == keypad_input_index)
 		{
 			lcd_puts("Changing pw");
 			lcd_gotoxy(0, 1);
 			lcd_puts("New pw: ****");
 		}
-		else if (keypad_input_index == 0)
+		else if (0 == keypad_input_index)
 		{
 			lcd_puts("Changing pw");
 			lcd_gotoxy(0, 1);
@@ -431,31 +424,31 @@ void display_message_vol2(int msg_number)
 	case MSG_ALARM_BUZZING:
 		if (wrong_pass == true)
 		{
-			if (keypad_input_index == 1)
+			if (1 == keypad_input_index)
 			{
 				lcd_puts("Wrong pw");
 				lcd_gotoxy(0, 1);
 				lcd_puts("User input: *");
 			}
-			else if (keypad_input_index == 2)
+			else if (2 == keypad_input_index)
 			{
 				lcd_puts("Wrong pw");
 				lcd_gotoxy(0, 1);
 				lcd_puts("User input: **");
 			}
-			else if (keypad_input_index == 3)
+			else if (3 == keypad_input_index)
 			{
 				lcd_puts("Wrong pw");
 				lcd_gotoxy(0, 1);
 				lcd_puts("User input: ***");
 			}
-			else if (keypad_input_index == 4)
+			else if (4 == keypad_input_index)
 			{
 				lcd_puts("Wrong pw");
 				lcd_gotoxy(0, 1);
 				lcd_puts("User input: ****");
 			}
-			else if (keypad_input_index == 0)
+			else if (0 == keypad_input_index)
 			{
 				lcd_puts("Wrong pw");
 				lcd_gotoxy(0, 1);
@@ -464,31 +457,31 @@ void display_message_vol2(int msg_number)
 		}
 		else
 		{
-			if (keypad_input_index == 1)
+			if (1 == keypad_input_index)
 			{
 				lcd_puts("Motion detected");
 				lcd_gotoxy(0, 1);
 				lcd_puts("User input: *");
 			}
-			else if (keypad_input_index == 2)
+			else if (2 == keypad_input_index)
 			{
 				lcd_puts("Motion detected");
 				lcd_gotoxy(0, 1);
 				lcd_puts("User input: **");
 			}
-			else if (keypad_input_index == 3)
+			else if (3 == keypad_input_index)
 			{
 				lcd_puts("Motion detected");
 				lcd_gotoxy(0, 1);
 				lcd_puts("User input: ***");
 			}
-			else if (keypad_input_index == 4)
+			else if (4 == keypad_input_index)
 			{
 				lcd_puts("Motion detected");
 				lcd_gotoxy(0, 1);
 				lcd_puts("User input: ****");
 			}
-			else if (keypad_input_index == 0)
+			else if (0 == keypad_input_index)
 			{
 				lcd_puts("Motion detected");
 				lcd_gotoxy(0, 1);
@@ -503,7 +496,7 @@ void display_message_vol2(int msg_number)
 }
 
 /* initialization of SPI communication by setting ports */
-void SPI_init()
+void spi_init()
 {
 	/* set SS, MOSI and SCK as output, pins 53 (PB0), 51 (PB2) and 52 (PB1) */
 	DDRB |= (1 << PB0) | (1 << PB1) | (1 << PB2); // SS as output
@@ -514,82 +507,50 @@ void SPI_init()
 }
 
 /* SPI communication master to slave */
-int SPI_communicate()
+int spi_communicate()
 {
 	int spi_send_data[1];
 	int spi_receive_data[1];
 	spi_send_data[0] = 1;
 	/* send byte to slave and receive a byte from slave */
 	PORTB &= ~(1 << PB0); // SS LOW
-	for (int8_t spi_data_index = 0; spi_data_index < sizeof(spi_send_data); spi_data_index++)
+	for (int8_t spi_data_index = 0;
+		 spi_data_index < sizeof(spi_send_data);
+		 spi_data_index++)
 	{
-
-		SPDR = spi_send_data[spi_data_index]; // send byte using SPI data register
+		// send byte using SPI data register
+		SPDR = spi_send_data[spi_data_index];
 
 		while (!(SPSR & (1 << SPIF)))
 		{
 			/* wait until the transmission is complete */
 			;
 		}
-
-		spi_receive_data[spi_data_index] = SPDR; // receive byte from the SPI data register
+		// receive byte from the SPI data register
+		spi_receive_data[spi_data_index] = SPDR;
 	}
 	/* End communication */
 	PORTB |= (1 << PB0); // SS HIGH
 
-	//Debugging sending received message to UART
-	//printf("%d\n",spi_receive_data[0]);
-
 	return spi_receive_data[0];
 }
 
-void LED_init()
+void led_init()
 {
 	//Set pin 37 as output
 	DDRC |= (1 << PC0);
 }
 
-void LED_on()
+void led_on()
 {
 	//Set pin 37 High
 	PORTC |= (1 << PC0);
 }
 
-void LED_off()
+void led_off()
 {
 	//Set pin 37 Low
 	PORTC &= ~(1 << PC0);
-}
-
-void EEPROM_write(char *write_data)
-{
-	for (uint16_t address_index = 0; address_index < sizeof(write_data); address_index++)
-	{
-		while (EECR & (1 << 1))
-		{
-			/* wait for the previous write operation to end */
-		}
-
-		EEAR = address_index;
-		EEDR = write_data[address_index];
-		EECR |= (1 << 2); // master programming enable
-		EECR |= (1 << 1); // EEPROM programming enable
-	}
-}
-
-void EEPROM_read(char *memory_data)
-{
-	for (uint16_t address_index = 0; address_index < memory_address_max; address_index++)
-	{
-		while (EECR & (1 << 1))
-		{
-			/* wait for the previous write operation to end */
-		}
-
-		EEAR = address_index;
-		EECR |= 0x01; // enable EEPROM read
-		memory_data[address_index] = EEDR;
-	}
 }
 
 bool compare_password()
@@ -616,8 +577,9 @@ void init_pwm_timer()
 	/* set up the 16-bit timer/counter4, mode 9 */
 	TCCR4B = 0; // reset timer/counter 4
 	TCNT4 = 0;
-
-	TCCR4A |= (1 << 6); // set compare output mode to toggle. This will output the PWM signal on pin 6 (PH3)
+	// set compare output mode to toggle.
+	// This will output the PWM signal on pin 6 (PH3)
+	TCCR4A |= (1 << 6);
 
 	// mode 9 phase correct
 	TCCR4A |= (1 << 0); // set register A WGM[1:0] bits
@@ -647,7 +609,8 @@ void turn_on_pwm_timer()
 	pwm_timer_on = true;
 }
 
-/* timer/counter4 compare match A interrupt vector. Used for PWM for the buzzer. Needs to be reset manually. */
+/* timer/counter4 compare match A interrupt vector.
+Used for PWM for the buzzer. Needs to be reset manually. */
 ISR(TIMER4_COMPA_vect)
 {
 	TCNT4 = 0;
