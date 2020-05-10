@@ -41,6 +41,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <util/delay.h>
+#include <avr/interrupt.h>
 #include "lcd.h"	// LCD Library by Peter Fleury.
 #include "keypad.h" // Keypad Library by https://www.exploreembedded.com/wiki/AVR_C_Library
 
